@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,13 @@
   <script src="https://cdn.jsdelivr.net/npm/dicom-parser@1.8.21/dist/dicomParser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --bg: #0f1117;
@@ -41,20 +48,47 @@
       justify-content: space-between;
       flex-shrink: 0;
     }
-    header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-    .header-logo { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
 
     .status-dot {
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--red);
       transition: background 0.3s;
     }
-    .status-dot.connected { background: var(--green); }
 
-    .status-label { font-size: 13px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+    .status-dot.connected {
+      background: var(--green);
+    }
 
-    .main-container { display: flex; flex: 1; overflow: hidden; }
+    .status-label {
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
 
     /* ── Left panel ── */
     .panel-left {
@@ -72,6 +106,7 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+
     .panel-tab {
       flex: 1;
       padding: 10px 16px;
@@ -85,11 +120,26 @@
       transition: color 0.15s, border-color 0.15s;
       font-family: inherit;
     }
-    .panel-tab:hover { color: var(--text); }
-    .panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    .tab-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-    .tab-content.active { display: flex; }
+    .panel-tab:hover {
+      color: var(--text);
+    }
+
+    .panel-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
 
     /* ── Images tab ── */
     .drop-zone {
@@ -108,65 +158,169 @@
       overflow: hidden;
       min-height: 180px;
     }
-    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,140,255,0.05); }
-    .drop-zone.has-image { border-style: solid; border-color: var(--border); cursor: default; }
-    .drop-zone input[type="file"] { display: none; }
-    .drop-icon { font-size: 36px; opacity: 0.5; }
-    .drop-text { color: var(--text-dim); font-size: 13px; text-align: center; line-height: 1.6; }
-    .drop-text strong { color: var(--accent); }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(79, 140, 255, 0.05);
+    }
+
+    .drop-zone.has-image {
+      border-style: solid;
+      border-color: var(--border);
+      cursor: default;
+    }
+
+    .drop-zone input[type="file"] {
+      display: none;
+    }
+
+    .drop-icon {
+      font-size: 36px;
+      opacity: 0.5;
+    }
+
+    .drop-text {
+      color: var(--text-dim);
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .drop-text strong {
+      color: var(--accent);
+    }
 
     .preview-img {
-      max-width: 100%; max-height: 100%;
-      object-fit: contain; display: none; border-radius: 8px;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: none;
+      border-radius: 8px;
     }
-    .drop-zone.has-image .drop-placeholder { display: none; }
-    .drop-zone.has-image .preview-img { display: block; }
+
+    .drop-zone.has-image .drop-placeholder {
+      display: none;
+    }
+
+    .drop-zone.has-image .preview-img {
+      display: block;
+    }
 
     /* Slice gallery */
-    .slice-gallery-container { display: none; padding: 0 16px; flex-shrink: 0; }
-    .slice-gallery-container.visible { display: block; }
+    .slice-gallery-container {
+      display: none;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .slice-gallery-container.visible {
+      display: block;
+    }
 
     .slice-gallery-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 0; font-size: 12px; color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 12px;
+      color: var(--text-dim);
     }
-    .slice-gallery-actions { display: flex; gap: 6px; }
+
+    .slice-gallery-actions {
+      display: flex;
+      gap: 6px;
+    }
+
     .slice-gallery-actions button {
-      padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
-      background: var(--surface2); color: var(--text-dim); cursor: pointer;
-      font-size: 11px; font-family: inherit;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
     }
-    .slice-gallery-actions button:hover { background: var(--border); color: var(--text); }
+
+    .slice-gallery-actions button:hover {
+      background: var(--border);
+      color: var(--text);
+    }
 
     .slice-gallery {
-      display: flex; gap: 4px; overflow-x: auto;
-      padding: 4px 0 8px; scroll-behavior: smooth;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding: 4px 0 8px;
+      scroll-behavior: smooth;
     }
-    .slice-gallery::-webkit-scrollbar { height: 4px; }
-    .slice-gallery::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .slice-gallery::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .slice-gallery::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
 
     .slice-thumb {
-      width: 56px; height: 56px; flex-shrink: 0;
-      border-radius: 4px; border: 2px solid transparent;
-      cursor: pointer; object-fit: cover;
-      opacity: 0.6; transition: opacity 0.15s, border-color 0.15s;
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      object-fit: cover;
+      opacity: 0.6;
+      transition: opacity 0.15s, border-color 0.15s;
     }
-    .slice-thumb:hover { opacity: 0.9; }
-    .slice-thumb.viewing { opacity: 1; border-color: var(--text-dim); }
-    .slice-thumb.selected { opacity: 1; border-color: var(--accent); }
+
+    .slice-thumb:hover {
+      opacity: 0.9;
+    }
+
+    .slice-thumb.viewing {
+      opacity: 1;
+      border-color: var(--text-dim);
+    }
+
+    .slice-thumb.selected {
+      opacity: 1;
+      border-color: var(--accent);
+    }
 
     /* DICOM info bar */
     .dicom-info {
-      display: none; padding: 4px 16px 4px; font-size: 11px; color: var(--text-dim);
+      display: none;
+      padding: 4px 16px 4px;
+      font-size: 11px;
+      color: var(--text-dim);
       flex-shrink: 0;
     }
-    .dicom-info.visible { display: flex; align-items: center; gap: 8px; }
-    .dicom-badge {
-      background: rgba(79,140,255,0.15); color: var(--accent);
-      padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10px;
+
+    .dicom-info.visible {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .image-actions { padding: 0 16px 12px; display: flex; gap: 8px; flex-shrink: 0; }
+    .dicom-badge {
+      background: rgba(79, 140, 255, 0.15);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 10px;
+    }
+
+    .image-actions {
+      padding: 0 16px 12px;
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
 
     /* ── Notes tab ── */
     .notes-drop-zone {
@@ -179,688 +333,1181 @@
       transition: border-color 0.2s, background 0.2s;
       flex-shrink: 0;
     }
-    .notes-drop-zone:hover, .notes-drop-zone.drag-over {
-      border-color: var(--accent); background: rgba(79,140,255,0.05);
-    }
-    .notes-drop-zone .drop-icon { font-size: 28px; opacity: 0.5; }
-    .notes-drop-zone .drop-text { font-size: 12px; margin-top: 6px; }
-    .notes-drop-zone input[type="file"] { display: none; }
 
-    .notes-textarea-wrap { flex: 1; padding: 0 16px; display: flex; flex-direction: column; min-height: 0; }
-    .notes-textarea-label { font-size: 12px; color: var(--text-dim); padding: 4px 0; }
-    .notes-textarea {
-      flex: 1; width: 100%; resize: none;
-      border: 1px solid var(--border); border-radius: 8px;
-      background: var(--surface2); color: var(--text);
-      padding: 10px 12px; font-size: 13px; font-family: inherit; line-height: 1.5;
+    .notes-drop-zone:hover,
+    .notes-drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(79, 140, 255, 0.05);
     }
-    .notes-textarea::placeholder { color: var(--text-dim); }
-    .notes-textarea:focus { outline: none; border-color: var(--accent); }
+
+    .notes-drop-zone .drop-icon {
+      font-size: 28px;
+      opacity: 0.5;
+    }
+
+    .notes-drop-zone .drop-text {
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .notes-drop-zone input[type="file"] {
+      display: none;
+    }
+
+    .notes-textarea-wrap {
+      flex: 1;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .notes-textarea-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 4px 0;
+    }
+
+    .notes-textarea {
+      flex: 1;
+      width: 100%;
+      resize: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface2);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+
+    .notes-textarea::placeholder {
+      color: var(--text-dim);
+    }
+
+    .notes-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
 
     .notes-footer {
-      padding: 8px 16px 12px; display: flex; align-items: center;
-      justify-content: space-between; flex-shrink: 0;
+      padding: 8px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
     }
-    .notes-char-count { font-size: 11px; color: var(--text-dim); }
-    .notes-char-count.warning { color: var(--orange); }
-    .notes-actions { display: flex; gap: 8px; }
+
+    .notes-char-count {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .notes-char-count.warning {
+      color: var(--orange);
+    }
+
+    .notes-actions {
+      display: flex;
+      gap: 8px;
+    }
 
     /* ── Right panel: chat ── */
-    .panel-right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .panel-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
 
     .chat-header {
       padding: 8px 16px;
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-dim);
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
     }
-    .chat-header label { flex-shrink: 0; }
-    .chat-header input {
-      background: var(--surface2); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 4px 8px; font-size: 13px; font-family: inherit; width: 200px;
+
+    .chat-header label {
+      flex-shrink: 0;
     }
-    .chat-header input:focus { outline: none; border-color: var(--accent); }
+
+    .chat-header input {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 13px;
+      font-family: inherit;
+      width: 200px;
+    }
+
+    .chat-header input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
 
     .notes-indicator {
-      display: none; align-items: center; gap: 4px;
-      background: rgba(52,211,153,0.12); color: var(--green);
-      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--green);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
       margin-left: auto;
     }
-    .notes-indicator.visible { display: flex; }
-    .notes-indicator button {
-      background: none; border: none; color: var(--green); cursor: pointer;
-      font-size: 14px; padding: 0 0 0 4px; opacity: 0.7;
+
+    .notes-indicator.visible {
+      display: flex;
     }
-    .notes-indicator button:hover { opacity: 1; }
+
+    .notes-indicator button {
+      background: none;
+      border: none;
+      color: var(--green);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 0 0 4px;
+      opacity: 0.7;
+    }
+
+    .notes-indicator button:hover {
+      opacity: 1;
+    }
 
     .chat-messages {
-      flex: 1; overflow-y: auto; padding: 20px 24px;
-      display: flex; flex-direction: column; gap: 16px;
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .message { max-width: 720px; line-height: 1.65; font-size: 14px; }
+    .message {
+      max-width: 720px;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
     .message.user {
-      align-self: flex-end; background: var(--accent); color: #fff;
-      padding: 10px 16px; border-radius: 16px 16px 4px 16px;
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 16px 16px 4px 16px;
     }
+
     .message.assistant {
-      align-self: flex-start; background: var(--surface2);
-      padding: 14px 18px; border-radius: 4px 16px 16px 16px;
-      white-space: pre-wrap; width: 100%;
+      align-self: flex-start;
+      background: var(--surface2);
+      padding: 14px 18px;
+      border-radius: 4px 16px 16px 16px;
+      white-space: pre-wrap;
+      width: 100%;
     }
-    .message.assistant.streaming { border-left: 3px solid var(--accent); }
+
+    .message.assistant.streaming {
+      border-left: 3px solid var(--accent);
+    }
+
     .message.system-msg {
-      align-self: center; color: var(--text-dim);
-      font-size: 13px; font-style: italic;
+      align-self: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-style: italic;
     }
 
     .chat-input-area {
-      padding: 16px 24px; border-top: 1px solid var(--border);
-      display: flex; gap: 10px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
     }
+
     .chat-input-area textarea {
-      flex: 1; resize: none; border: 1px solid var(--border); border-radius: 10px;
-      background: var(--surface2); color: var(--text);
-      padding: 12px 14px; font-size: 14px; font-family: inherit;
-      line-height: 1.4; min-height: 44px; max-height: 140px;
+      flex: 1;
+      resize: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface2);
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.4;
+      min-height: 44px;
+      max-height: 140px;
     }
-    .chat-input-area textarea::placeholder { color: var(--text-dim); }
-    .chat-input-area textarea:focus { outline: none; border-color: var(--accent); }
+
+    .chat-input-area textarea::placeholder {
+      color: var(--text-dim);
+    }
+
+    .chat-input-area textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
 
     .send-btn {
-      width: 44px; height: 44px; border-radius: 10px; border: none;
-      background: var(--accent); color: #fff; cursor: pointer; font-size: 18px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: background 0.15s;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
     }
-    .send-btn:hover { background: var(--accent-hover); }
-    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .send-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
 
     .disclaimer {
-      padding: 8px 16px; font-size: 11px; color: var(--text-dim);
-      text-align: center; border-top: 1px solid var(--border);
+      padding: 8px 16px;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      border-top: 1px solid var(--border);
     }
 
     .btn {
-      padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--surface2); color: var(--text); cursor: pointer;
-      font-size: 13px; font-weight: 500; transition: background 0.15s, border-color 0.15s;
-      flex: 1; text-align: center; font-family: inherit;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+      flex: 1;
+      text-align: center;
+      font-family: inherit;
     }
-    .btn:hover { background: var(--border); }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .btn.primary:hover { background: var(--accent-hover); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn:hover {
+      background: var(--border);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
 
     /* Loading spinner */
-    .loading-bar { display: none; padding: 0 16px 8px; flex-shrink: 0; }
-    .loading-bar.visible { display: block; }
-    .loading-bar-inner {
-      height: 3px; border-radius: 2px; background: var(--border); overflow: hidden;
+    .loading-bar {
+      display: none;
+      padding: 0 16px 8px;
+      flex-shrink: 0;
     }
+
+    .loading-bar.visible {
+      display: block;
+    }
+
+    .loading-bar-inner {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
     .loading-bar-fill {
-      height: 100%; background: var(--accent); border-radius: 2px;
-      transition: width 0.3s; width: 0%;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.3s;
+      width: 0%;
     }
 
     /* ── Threads tab ── */
-    #tabThreads { padding: 12px 16px; gap: 10px; overflow-y: auto; }
+    #tabThreads {
+      padding: 12px 16px;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
     .thread-new-btn {
-      width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none;
-      border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;
-      font-family: inherit; transition: background 0.15s; flex-shrink: 0;
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: background 0.15s;
+      flex-shrink: 0;
     }
-    .thread-new-btn:hover { background: var(--accent-hover); }
+
+    .thread-new-btn:hover {
+      background: var(--accent-hover);
+    }
+
     .thread-empty-state {
-      text-align: center; color: var(--text-dim); font-size: 13px;
-      padding: 40px 16px; line-height: 1.6;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      padding: 40px 16px;
+      line-height: 1.6;
     }
-    .thread-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .thread-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .thread-card {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px 12px; cursor: pointer;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
-    .thread-card:hover { background: var(--surface); border-color: var(--text-dim); }
-    .thread-card.active { border-color: var(--accent); background: rgba(79,140,255,0.08); }
-    .thread-card-header { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+
+    .thread-card:hover {
+      background: var(--surface);
+      border-color: var(--text-dim);
+    }
+
+    .thread-card.active {
+      border-color: var(--accent);
+      background: rgba(79, 140, 255, 0.08);
+    }
+
+    .thread-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
     .thread-title {
-      flex: 1; font-size: 13px; font-weight: 600; color: var(--text);
-      margin: 0; outline: none; word-break: break-word; min-height: 18px;
-      background: none; border: none; padding: 0; font-family: inherit;
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+      outline: none;
+      word-break: break-word;
+      min-height: 18px;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
       line-height: 1.4;
     }
-    .thread-title:focus { color: var(--accent); }
+
+    .thread-title:focus {
+      color: var(--accent);
+    }
+
     .thread-save-btn {
-      background: none; border: none; color: var(--text-dim); font-size: 16px;
-      cursor: pointer; padding: 0; flex-shrink: 0; transition: color 0.15s;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      transition: color 0.15s;
     }
-    .thread-save-btn:hover { color: var(--orange); }
-    .thread-save-btn.saved { color: var(--orange); }
+
+    .thread-save-btn:hover {
+      color: var(--orange);
+    }
+
+    .thread-save-btn.saved {
+      color: var(--orange);
+    }
+
     .thread-meta {
-      display: flex; gap: 8px; font-size: 11px; color: var(--text-dim);
-      margin-bottom: 6px; flex-wrap: wrap;
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      flex-wrap: wrap;
     }
-    .thread-thumbnails { display: flex; gap: 3px; margin-bottom: 6px; align-items: center; }
+
+    .thread-thumbnails {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
     .thread-thumb {
-      width: 40px; height: 40px; border-radius: 4px; object-fit: cover;
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
       border: 1px solid var(--border);
     }
-    .thread-thumb-more { font-size: 10px; color: var(--text-dim); font-weight: 600; margin-left: 2px; }
-    .thread-actions { display: flex; gap: 6px; }
-    .thread-load-btn {
-      flex: 1; padding: 5px 10px; background: var(--surface); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px; font-size: 11px;
-      font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s;
+
+    .thread-thumb-more {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 600;
+      margin-left: 2px;
     }
-    .thread-load-btn:hover { background: var(--border); }
+
+    .thread-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .thread-load-btn {
+      flex: 1;
+      padding: 5px 10px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .thread-load-btn:hover {
+      background: var(--border);
+    }
+
     .thread-delete-btn {
-      padding: 5px 8px; background: none; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--text-dim);
+      padding: 5px 8px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-dim);
       transition: border-color 0.15s, color 0.15s;
     }
-    .thread-delete-btn:hover { border-color: var(--red); color: var(--red); }
+
+    .thread-delete-btn:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
 
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .lang-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 12px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .lang-toggle:hover {
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
   </style>
 </head>
+
 <body>
 
-<header>
-  <h1><img src="logo.png" alt="Logo" class="header-logo">Lulo's NOT a Health Copilot</h1>
-  <div class="status-label">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="statusText">Checking Ollama...</span>
-  </div>
-</header>
-
-<div class="main-container">
-  <!-- Left Panel -->
-  <div class="panel-left">
-    <div class="panel-tabs">
-      <button class="panel-tab active" data-tab="images">Images</button>
-      <button class="panel-tab" data-tab="notes">Notes</button>
-      <button class="panel-tab" data-tab="threads">Threads</button>
+  <header>
+    <h1><img src="logo.png" alt="Logo" class="header-logo"><span data-i18n="appTitle">Lulo's NOT a Health Copilot</span>
+    </h1>
+    <div style="display:flex;align-items:center">
+      <button class="lang-toggle" id="langToggle">ES</button>
+      <div class="status-label">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText" data-i18n="statusChecking">Checking Ollama...</span>
+      </div>
     </div>
+  </header>
 
-    <!-- Images Tab -->
-    <div class="tab-content active" id="tabImages">
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="fileInput" accept="image/*,.dcm,.DCM,application/dicom" multiple>
-        <input type="file" id="folderInput" webkitdirectory multiple style="display:none">
-        <div class="drop-placeholder">
-          <div class="drop-icon">&#128444;</div>
+  <div class="main-container">
+    <!-- Left Panel -->
+    <div class="panel-left">
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="images" data-i18n="tabImages">Images</button>
+        <button class="panel-tab" data-tab="notes" data-i18n="tabNotes">Notes</button>
+        <button class="panel-tab" data-tab="threads" data-i18n="tabThreads">Threads</button>
+      </div>
+
+      <!-- Images Tab -->
+      <div class="tab-content active" id="tabImages">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*,.dcm,.DCM,application/dicom" multiple>
+          <input type="file" id="folderInput" webkitdirectory multiple style="display:none">
+          <div class="drop-placeholder">
+            <div class="drop-icon">&#128444;</div>
+            <div class="drop-text">
+              <strong data-i18n="dropTitle">Click to upload</strong> <span data-i18n="dropOrDrag">or drag &amp;
+                drop</span><br>
+              <span data-i18n="dropPaste">or paste an image (Ctrl+V / Cmd+V)</span><br><br>
+              <span data-i18n="dropTypes">X-rays, CT/MRI slices (.dcm), photos</span>
+            </div>
+          </div>
+          <img class="preview-img" id="previewImg" alt="Preview">
+        </div>
+
+        <div class="dicom-info" id="dicomInfo">
+          <span class="dicom-badge">DICOM</span>
+          <span id="dicomInfoText"></span>
+        </div>
+
+        <div class="loading-bar" id="loadingBar">
+          <div class="loading-bar-inner">
+            <div class="loading-bar-fill" id="loadingBarFill"></div>
+          </div>
+        </div>
+
+        <div class="slice-gallery-container" id="sliceGalleryContainer">
+          <div class="slice-gallery-header">
+            <span id="sliceCountLabel">0 slices</span>
+            <div class="slice-gallery-actions">
+              <button id="autoSelectBtn" title="Select ~6 evenly-spaced slices">Auto-Select</button>
+              <button id="selectAllBtn">Select All</button>
+              <button id="uploadFolderBtn" title="Upload a DICOM folder">+ Folder</button>
+            </div>
+          </div>
+          <div class="slice-gallery" id="sliceGallery"></div>
+        </div>
+
+        <div class="image-actions">
+          <button class="btn" id="clearBtn" disabled data-i18n="btnClear">Clear</button>
+          <button class="btn primary" id="analyzeBtn" disabled data-i18n="btnAnalyze">Analyze</button>
+        </div>
+      </div>
+
+      <!-- Notes Tab -->
+      <div class="tab-content" id="tabNotes">
+        <div class="notes-drop-zone" id="notesDropZone">
+          <input type="file" id="notesFileInput" accept=".txt,.pdf,.text">
+          <div class="drop-icon">&#128196;</div>
           <div class="drop-text">
-            <strong>Click to upload</strong> or drag &amp; drop<br>
-            or paste an image (Ctrl+V / Cmd+V)<br><br>
-            X-rays, CT/MRI slices (.dcm), photos
+            <strong data-i18n="notesDropTitle">Upload</strong> <span data-i18n="notesDropSubtitle">clinical notes (.txt,
+              .pdf)</span><br><span data-i18n="notesDropPaste">or paste below</span>
           </div>
         </div>
-        <img class="preview-img" id="previewImg" alt="Preview">
-      </div>
-
-      <div class="dicom-info" id="dicomInfo">
-        <span class="dicom-badge">DICOM</span>
-        <span id="dicomInfoText"></span>
-      </div>
-
-      <div class="loading-bar" id="loadingBar">
-        <div class="loading-bar-inner"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
-      </div>
-
-      <div class="slice-gallery-container" id="sliceGalleryContainer">
-        <div class="slice-gallery-header">
-          <span id="sliceCountLabel">0 slices</span>
-          <div class="slice-gallery-actions">
-            <button id="autoSelectBtn" title="Select ~6 evenly-spaced slices">Auto-Select</button>
-            <button id="selectAllBtn">Select All</button>
-            <button id="uploadFolderBtn" title="Upload a DICOM folder">+ Folder</button>
+        <div class="notes-textarea-wrap">
+          <div class="notes-textarea-label" data-i18n="notesLabel">Clinical Notes / After-Visit Summary</div>
+          <textarea class="notes-textarea" id="notesTextarea"
+            placeholder="Paste clinical notes, after-visit summaries, lab results, or any relevant text here..."
+            data-i18n-placeholder="notesPlaceholder"></textarea>
+        </div>
+        <div class="notes-footer">
+          <span class="notes-char-count" id="notesCharCount">0 chars</span>
+          <div class="notes-actions">
+            <button class="btn" id="clearNotesBtn" style="flex:none;padding:8px 14px"
+              data-i18n="btnClear">Clear</button>
+            <button class="btn primary" id="loadNotesBtn" style="flex:none;padding:8px 14px"
+              data-i18n="btnLoadNotes">Load into Chat</button>
           </div>
         </div>
-        <div class="slice-gallery" id="sliceGallery"></div>
       </div>
 
-      <div class="image-actions">
-        <button class="btn" id="clearBtn" disabled>Clear</button>
-        <button class="btn primary" id="analyzeBtn" disabled>Analyze</button>
-      </div>
-    </div>
-
-    <!-- Notes Tab -->
-    <div class="tab-content" id="tabNotes">
-      <div class="notes-drop-zone" id="notesDropZone">
-        <input type="file" id="notesFileInput" accept=".txt,.pdf,.text">
-        <div class="drop-icon">&#128196;</div>
-        <div class="drop-text">
-          <strong>Upload</strong> clinical notes (.txt, .pdf)<br>or paste below
-        </div>
-      </div>
-      <div class="notes-textarea-wrap">
-        <div class="notes-textarea-label">Clinical Notes / After-Visit Summary</div>
-        <textarea class="notes-textarea" id="notesTextarea"
-          placeholder="Paste clinical notes, after-visit summaries, lab results, or any relevant text here..."></textarea>
-      </div>
-      <div class="notes-footer">
-        <span class="notes-char-count" id="notesCharCount">0 chars</span>
-        <div class="notes-actions">
-          <button class="btn" id="clearNotesBtn" style="flex:none;padding:8px 14px">Clear</button>
-          <button class="btn primary" id="loadNotesBtn" style="flex:none;padding:8px 14px">Load into Chat</button>
+      <!-- Threads Tab -->
+      <div class="tab-content" id="tabThreads">
+        <button class="thread-new-btn" id="newThreadBtn" data-i18n="btnNewThread">+ New Thread</button>
+        <div class="thread-list" id="threadList">
+          <div class="thread-empty-state" data-i18n="threadsEmpty">No saved threads yet.<br>Threads are created
+            automatically when you analyze images or ask questions.</div>
         </div>
       </div>
     </div>
 
-    <!-- Threads Tab -->
-    <div class="tab-content" id="tabThreads">
-      <button class="thread-new-btn" id="newThreadBtn">+ New Thread</button>
-      <div class="thread-list" id="threadList">
-        <div class="thread-empty-state">No saved threads yet.<br>Threads are created automatically when you analyze images or ask questions.</div>
+    <!-- Right Panel: Chat -->
+    <div class="panel-right">
+      <div class="chat-header">
+        <label data-i18n="modelLabel">Model:</label>
+        <input type="text" id="modelName" value="medgemma-vision" placeholder="model name">
+        <div class="notes-indicator" id="notesIndicator">
+          <span id="notesIndicatorText" data-i18n="notesLoaded">Notes loaded</span>
+          <button id="clearNotesIndicatorBtn" title="Clear notes">&times;</button>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="message system-msg" data-i18n="chatWelcome">Upload a medical image and click Analyze, or load
+          clinical notes to ask questions.</div>
+      </div>
+      <div class="chat-input-area">
+        <textarea id="chatInput" placeholder="Ask about the image or clinical notes..." rows="1"
+          data-i18n-placeholder="chatPlaceholder"></textarea>
+        <button class="send-btn" id="sendBtn" title="Send">&#9654;</button>
+      </div>
+      <div class="disclaimer" data-i18n="disclaimer">
+        Don't take medical advice from a monkey. For research and educational use only.
       </div>
     </div>
   </div>
 
-  <!-- Right Panel: Chat -->
-  <div class="panel-right">
-    <div class="chat-header">
-      <label>Model:</label>
-      <input type="text" id="modelName" value="medgemma-vision" placeholder="model name">
-      <div class="notes-indicator" id="notesIndicator">
-        <span id="notesIndicatorText">Notes loaded</span>
-        <button id="clearNotesIndicatorBtn" title="Clear notes">&times;</button>
-      </div>
-    </div>
-    <div class="chat-messages" id="chatMessages">
-      <div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>
-    </div>
-    <div class="chat-input-area">
-      <textarea id="chatInput" placeholder="Ask about the image or clinical notes..." rows="1"></textarea>
-      <button class="send-btn" id="sendBtn" title="Send">&#9654;</button>
-    </div>
-    <div class="disclaimer">
-      Don't take medical advice from a monkey. For research and educational use only.
-    </div>
-  </div>
-</div>
+  <script>
+    const OLLAMA_BASE = 'http://localhost:11434';
 
-<script>
-const OLLAMA_BASE = 'http://localhost:11434';
-
-// ── DOM refs ──
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const folderInput = document.getElementById('folderInput');
-const previewImg = document.getElementById('previewImg');
-const clearBtn = document.getElementById('clearBtn');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const chatMessages = document.getElementById('chatMessages');
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendBtn');
-const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const modelNameInput = document.getElementById('modelName');
-
-const sliceGalleryContainer = document.getElementById('sliceGalleryContainer');
-const sliceGallery = document.getElementById('sliceGallery');
-const sliceCountLabel = document.getElementById('sliceCountLabel');
-const autoSelectBtn = document.getElementById('autoSelectBtn');
-const selectAllBtn = document.getElementById('selectAllBtn');
-const uploadFolderBtn = document.getElementById('uploadFolderBtn');
-const dicomInfo = document.getElementById('dicomInfo');
-const dicomInfoText = document.getElementById('dicomInfoText');
-const loadingBar = document.getElementById('loadingBar');
-const loadingBarFill = document.getElementById('loadingBarFill');
-
-const notesDropZone = document.getElementById('notesDropZone');
-const notesFileInput = document.getElementById('notesFileInput');
-const notesTextarea = document.getElementById('notesTextarea');
-const notesCharCount = document.getElementById('notesCharCount');
-const clearNotesBtn = document.getElementById('clearNotesBtn');
-const loadNotesBtn = document.getElementById('loadNotesBtn');
-const notesIndicator = document.getElementById('notesIndicator');
-const notesIndicatorText = document.getElementById('notesIndicatorText');
-const clearNotesIndicatorBtn = document.getElementById('clearNotesIndicatorBtn');
-
-// ── State ──
-let loadedSlices = [];         // [{base64, fileName, instanceNumber, dataUrl}]
-let selectedSliceIndices = []; // indices into loadedSlices that are selected
-let currentPreviewIndex = -1;  // which slice is shown in main preview
-let conversationHistory = [];
-let isStreaming = false;
-let clinicalNotesText = '';
-let clinicalNotesSource = '';
-let notesInjected = false;
-let isDicomMode = false;
-
-// ── Thread state ──
-let currentThreadId = null;
-let threads = [];
-let imageDB = null;
-
-// ════════════════════════════════════════
-//  INDEXEDDB + THREAD PERSISTENCE
-// ════════════════════════════════════════
-
-function initImageDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('MedGemmaDB', 1);
-    req.onerror = () => { console.warn('IndexedDB not available'); resolve(null); };
-    req.onsuccess = () => { imageDB = req.result; resolve(imageDB); };
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('images')) {
-        db.createObjectStore('images', { keyPath: 'id' });
+    // ── Localization ──
+    const translations = {
+      en: {
+        appTitle: "Lulo's NOT a Health Copilot",
+        statusChecking: "Checking Ollama...",
+        statusConnected: "Ollama connected",
+        statusNotReachable: "Ollama not reachable",
+        tabImages: "Images",
+        tabNotes: "Notes",
+        tabThreads: "Threads",
+        dropTitle: "Click to upload",
+        dropOrDrag: "or drag & drop",
+        dropPaste: "or paste an image (Ctrl+V / Cmd+V)",
+        dropTypes: "X-rays, CT/MRI slices (.dcm), photos",
+        dicomBadge: "DICOM",
+        sliceCount: "{count} slices loaded",
+        sliceCountSelected: "{selected} of {total} slices selected",
+        sliceSelectAuto: "Auto-Select",
+        sliceSelectAll: "Select All",
+        sliceUploadFolder: "+ Folder",
+        btnClear: "Clear",
+        btnAnalyze: "Analyze",
+        notesDropTitle: "Upload",
+        notesDropSubtitle: "clinical notes (.txt, .pdf)",
+        notesDropPaste: "or paste below",
+        notesLabel: "Clinical Notes / After-Visit Summary",
+        notesPlaceholder: "Paste clinical notes, after-visit summaries, lab results, or any relevant text here...",
+        btnLoadNotes: "Load into Chat",
+        btnNewThread: "+ New Thread",
+        threadsEmpty: "No saved threads yet.<br>Threads are created automatically when you analyze images or ask questions.",
+        modelLabel: "Model:",
+        notesLoaded: "Notes loaded",
+        chatWelcome: "Upload a medical image and click Analyze, or load clinical notes to ask questions.",
+        chatPlaceholder: "Ask about the image or clinical notes...",
+        disclaimer: "Don't take medical advice from a monkey. For research and educational use only.",
+        systemStorageFull: "Storage full. Delete some old threads to free space.",
+        systemNotesLoaded: "Clinical notes loaded ({count} chars). Notes will be included as context in your next message.",
+        timeJustNow: "Just now",
+        timeAgoM: "{m}m ago",
+        timeAgoH: "{h}h ago",
+        timeAgoD: "{d}d ago",
+        promptAnalyzeMulti: "Analyze these {count} medical image slices. {dicom}Describe what you observe across the slices, identify any notable findings, and provide a differential assessment.",
+        promptAnalyzeSingle: "Analyze this medical image. Describe what you observe, identify any notable findings, and provide a differential assessment.",
+        dicomContext: "The images use 3-channel CT windowing (R=bone/lung, G=soft tissue, B=brain). "
+      },
+      es: {
+        appTitle: "NO es un Copiloto de Salud",
+        statusChecking: "Verificando Ollama...",
+        statusConnected: "Ollama conectado",
+        statusNotReachable: "Ollama no disponible",
+        tabImages: "Imágenes",
+        tabNotes: "Notas",
+        tabThreads: "Hilos",
+        dropTitle: "Clic para subir",
+        dropOrDrag: "o arrastrar y soltar",
+        dropPaste: "o pegar imagen (Ctrl+V / Cmd+V)",
+        dropTypes: "Rayos-X, cortes CT/MRI (.dcm), fotos",
+        dicomBadge: "DICOM",
+        sliceCount: "{count} cortes cargados",
+        sliceCountSelected: "{selected} de {total} cortes seleccionados",
+        sliceSelectAuto: "Auto-Selec.",
+        sliceSelectAll: "Selec. Todos",
+        sliceUploadFolder: "+ Carpeta",
+        btnClear: "Borrar",
+        btnAnalyze: "Analizar",
+        notesDropTitle: "Subir",
+        notesDropSubtitle: "notas clínicas (.txt, .pdf)",
+        notesDropPaste: "o pegar abajo",
+        notesLabel: "Notas Clínicas / Resumen de Visita",
+        notesPlaceholder: "Pegue notas clínicas, resúmenes, resultados de laboratorio o texto relevante aquí...",
+        btnLoadNotes: "Cargar al Chat",
+        btnNewThread: "+ Nuevo Hilo",
+        threadsEmpty: "No hay hilos guardados.<br>Se crean automáticamente al analizar imágenes o preguntar.",
+        modelLabel: "Modelo:",
+        notesLoaded: "Notas cargadas",
+        chatWelcome: "Sube una imagen médica y haz clic en Analizar, o carga notas para preguntar.",
+        chatPlaceholder: "Pregunta sobre la imagen o notas...",
+        disclaimer: "No aceptes consejos médicos de un mono. Solo para investigación y educación.",
+        systemStorageFull: "Almacenamiento lleno. Borra hilos antiguos.",
+        systemNotesLoaded: "Notas cargadas ({count} caracteres). Se incluirán como contexto.",
+        timeJustNow: "Ahora",
+        timeAgoM: "hace {m}m",
+        timeAgoH: "hace {h}h",
+        timeAgoD: "hace {d}d",
+        promptAnalyzeMulti: "Analiza estos {count} cortes de imagen médica. {dicom}Describe lo que observas, identifica hallazgos notables y proporciona una evaluación diferencial.",
+        promptAnalyzeSingle: "Analiza esta imagen médica. Describe lo que observas, identifica hallazgos notables y proporciona una evaluación diferencial.",
+        dicomContext: "Las imágenes usan ventana CT de 3 canales (R=hueso/pulmón, G=tejido blando, B=cerebro). "
       }
     };
-  });
-}
 
-function saveImageToDB(id, base64, dataUrl) {
-  return new Promise((resolve, reject) => {
-    if (!imageDB) { resolve(); return; }
-    const tx = imageDB.transaction('images', 'readwrite');
-    tx.objectStore('images').put({ id, base64, dataUrl });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
+    let currentLang = localStorage.getItem('medgemma_lang') || 'en';
 
-function getImageFromDB(id) {
-  return new Promise((resolve, reject) => {
-    if (!imageDB) { resolve(null); return; }
-    const tx = imageDB.transaction('images', 'readonly');
-    const req = tx.objectStore('images').get(id);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function deleteImageFromDB(id) {
-  return new Promise((resolve) => {
-    if (!imageDB) { resolve(); return; }
-    const tx = imageDB.transaction('images', 'readwrite');
-    tx.objectStore('images').delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
-  });
-}
-
-function generateThumbnail(dataUrl, maxSize = 80) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.5));
-    };
-    img.onerror = () => resolve('');
-    img.src = dataUrl;
-  });
-}
-
-function generateId(prefix) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-}
-
-function loadThreadsFromStorage() {
-  try {
-    const stored = localStorage.getItem('medgemma_threads');
-    threads = stored ? JSON.parse(stored) : [];
-  } catch { threads = []; }
-  cleanupExpiredThreads();
-}
-
-function saveThreadsToStorage() {
-  try {
-    const toStore = threads.map(t => ({
-      ...t,
-      conversationHistory: t.conversationHistory.map(m => ({ role: m.role, content: m.content }))
-    }));
-    localStorage.setItem('medgemma_threads', JSON.stringify(toStore));
-  } catch (e) {
-    if (e.name === 'QuotaExceededError') {
-      addMessage('system-msg', 'Storage full. Delete some old threads to free space.');
+    function t(key, params = {}) {
+      let text = translations[currentLang][key] || key;
+      for (const [k, v] of Object.entries(params)) {
+        text = text.replace(`{${k}}`, v);
+      }
+      return text;
     }
-  }
-}
 
-function cleanupExpiredThreads() {
-  const cutoff = Date.now() - (30 * 24 * 60 * 60 * 1000);
-  const expired = threads.filter(t => !t.saved && t.createdAt < cutoff);
-  expired.forEach(t => {
-    (t.images || []).forEach(img => deleteImageFromDB(img.id).catch(() => {}));
-  });
-  threads = threads.filter(t => t.saved || t.createdAt >= cutoff);
-  saveThreadsToStorage();
-}
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('medgemma_lang', lang);
+      document.getElementById('langToggle').textContent = lang === 'en' ? 'ES' : 'EN';
 
-function generateThreadTitle() {
-  if (loadedSlices.length > 0) {
-    const name = loadedSlices[0].fileName;
-    if (isDicomMode && loadedSlices.length > 1) return `DICOM Series (${loadedSlices.length} slices)`;
-    if (isDicomMode) return `DICOM - ${name}`;
-    const short = name.length > 30 ? name.substring(0, 27) + '...' : name;
-    return short;
-  }
-  if (conversationHistory.length > 0) {
-    const first = conversationHistory[0].content.substring(0, 50);
-    return first.length < conversationHistory[0].content.length ? first + '...' : first;
-  }
-  const d = new Date();
-  return `Session ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-}
+      // Update static elements
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            // Handle placeholders if needed, currently mostly handled by data-i18n-placeholder
+          } else {
+            el.innerHTML = translations[lang][key];
+          }
+        }
+      });
 
-function hasUnsavedContent() {
-  return loadedSlices.length > 0 || conversationHistory.length > 0 || clinicalNotesText.length > 0;
-}
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (translations[lang][key]) el.placeholder = translations[lang][key];
+      });
 
-async function createThreadFromCurrentState() {
-  const threadId = generateId('thread');
-  const imageMeta = [];
-  for (const slice of loadedSlices) {
-    const imgId = generateId('img');
-    await saveImageToDB(imgId, slice.base64, slice.dataUrl);
-    const thumb = await generateThumbnail(slice.dataUrl);
-    imageMeta.push({
-      id: imgId,
-      fileName: slice.fileName,
-      instanceNumber: slice.instanceNumber,
-      sliceLocation: slice.sliceLocation,
-      thumbnailDataUrl: thumb
+      // Update dynamic logic triggers
+      updateSliceCountLabel();
+      checkOllama(); // Update status text
+      renderThreadList(); // Update thread dates
+    }
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+      setLanguage(currentLang === 'en' ? 'es' : 'en');
     });
-  }
-  const thread = {
-    id: threadId,
-    title: generateThreadTitle(),
-    createdAt: Date.now(),
-    lastModifiedAt: Date.now(),
-    saved: false,
-    conversationHistory: conversationHistory.map(m => ({ role: m.role, content: m.content })),
-    clinicalNotesText,
-    clinicalNotesSource,
-    notesInjected,
-    images: imageMeta,
-    isDicomMode,
-    selectedSliceIndices: [...selectedSliceIndices]
-  };
-  threads.unshift(thread);
-  saveThreadsToStorage();
-  currentThreadId = threadId;
-  renderThreadList();
-  return thread;
-}
 
-async function updateCurrentThread() {
-  if (!currentThreadId) {
-    if (hasUnsavedContent()) await createThreadFromCurrentState();
-    return;
-  }
-  const thread = threads.find(t => t.id === currentThreadId);
-  if (!thread) return;
-  thread.conversationHistory = conversationHistory.map(m => ({ role: m.role, content: m.content }));
-  thread.clinicalNotesText = clinicalNotesText;
-  thread.clinicalNotesSource = clinicalNotesSource;
-  thread.notesInjected = notesInjected;
-  thread.lastModifiedAt = Date.now();
-  if (!thread.title || thread.title.startsWith('Session ')) thread.title = generateThreadTitle();
-  saveThreadsToStorage();
-  renderThreadList();
-}
+    // Init language
+    // Call this after DOMContentLoaded or simply at the end of script,
+    // but since we are at top of script, we'll rely on the init block at the end
 
-async function loadThread(threadId) {
-  const thread = threads.find(t => t.id === threadId);
-  if (!thread) return;
+    // ── DOM refs ──
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const folderInput = document.getElementById('folderInput');
+    const previewImg = document.getElementById('previewImg');
+    const clearBtn = document.getElementById('clearBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const modelNameInput = document.getElementById('modelName');
 
-  clearAllImages();
-  conversationHistory = [];
-  chatMessages.innerHTML = '';
-  clinicalNotesText = '';
-  clinicalNotesSource = '';
-  notesInjected = false;
-  notesTextarea.value = '';
-  updateNotesCharCount();
-  notesIndicator.classList.remove('visible');
+    const sliceGalleryContainer = document.getElementById('sliceGalleryContainer');
+    const sliceGallery = document.getElementById('sliceGallery');
+    const sliceCountLabel = document.getElementById('sliceCountLabel');
+    const autoSelectBtn = document.getElementById('autoSelectBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const uploadFolderBtn = document.getElementById('uploadFolderBtn');
+    const dicomInfo = document.getElementById('dicomInfo');
+    const dicomInfoText = document.getElementById('dicomInfoText');
+    const loadingBar = document.getElementById('loadingBar');
+    const loadingBarFill = document.getElementById('loadingBarFill');
 
-  loadedSlices = [];
-  for (const imgMeta of thread.images) {
-    const imgData = await getImageFromDB(imgMeta.id);
-    if (imgData) {
-      loadedSlices.push({
-        base64: imgData.base64,
-        dataUrl: imgData.dataUrl,
-        fileName: imgMeta.fileName,
-        instanceNumber: imgMeta.instanceNumber,
-        sliceLocation: imgMeta.sliceLocation
+    const notesDropZone = document.getElementById('notesDropZone');
+    const notesFileInput = document.getElementById('notesFileInput');
+    const notesTextarea = document.getElementById('notesTextarea');
+    const notesCharCount = document.getElementById('notesCharCount');
+    const clearNotesBtn = document.getElementById('clearNotesBtn');
+    const loadNotesBtn = document.getElementById('loadNotesBtn');
+    const notesIndicator = document.getElementById('notesIndicator');
+    const notesIndicatorText = document.getElementById('notesIndicatorText');
+    const clearNotesIndicatorBtn = document.getElementById('clearNotesIndicatorBtn');
+
+    // ── State ──
+    let loadedSlices = [];         // [{base64, fileName, instanceNumber, dataUrl}]
+    let selectedSliceIndices = []; // indices into loadedSlices that are selected
+    let currentPreviewIndex = -1;  // which slice is shown in main preview
+    let conversationHistory = [];
+    let isStreaming = false;
+    let clinicalNotesText = '';
+    let clinicalNotesSource = '';
+    let notesInjected = false;
+    let isDicomMode = false;
+
+    // ── Thread state ──
+    let currentThreadId = null;
+    let threads = [];
+    let imageDB = null;
+
+    // ════════════════════════════════════════
+    //  INDEXEDDB + THREAD PERSISTENCE
+    // ════════════════════════════════════════
+
+    function initImageDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('MedGemmaDB', 1);
+        req.onerror = () => { console.warn('IndexedDB not available'); resolve(null); };
+        req.onsuccess = () => { imageDB = req.result; resolve(imageDB); };
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('images')) {
+            db.createObjectStore('images', { keyPath: 'id' });
+          }
+        };
       });
     }
-  }
 
-  selectedSliceIndices = [...(thread.selectedSliceIndices || [])];
-  isDicomMode = thread.isDicomMode || false;
-
-  if (loadedSlices.length > 0) {
-    currentPreviewIndex = 0;
-    previewImg.src = loadedSlices[0].dataUrl;
-    dropZone.classList.add('has-image');
-    clearBtn.disabled = false;
-    analyzeBtn.disabled = selectedSliceIndices.length === 0;
-    if (loadedSlices.length > 1) {
-      buildSliceGallery();
-      sliceGalleryContainer.classList.add('visible');
-    }
-    if (isDicomMode) dicomInfo.classList.add('visible');
-  }
-
-  clinicalNotesText = thread.clinicalNotesText || '';
-  clinicalNotesSource = thread.clinicalNotesSource || '';
-  notesInjected = thread.notesInjected || false;
-  if (clinicalNotesText) {
-    notesTextarea.value = clinicalNotesText;
-    updateNotesCharCount();
-    showNotesIndicator();
-  }
-
-  conversationHistory = (thread.conversationHistory || []).map(m => ({ role: m.role, content: m.content }));
-  if (loadedSlices.length > 0) {
-    const firstUser = conversationHistory.find(m => m.role === 'user');
-    if (firstUser) firstUser.images = loadedSlices.map(s => s.base64);
-  }
-  for (const msg of conversationHistory) {
-    if (msg.role === 'user') addMessage('user', msg.content);
-    else if (msg.role === 'assistant') addMessage('assistant', msg.content);
-  }
-
-  currentThreadId = threadId;
-  thread.lastModifiedAt = Date.now();
-  saveThreadsToStorage();
-
-  document.querySelector('[data-tab="images"]').click();
-}
-
-async function deleteThread(threadId) {
-  const thread = threads.find(t => t.id === threadId);
-  if (!thread) return;
-  for (const img of (thread.images || [])) {
-    await deleteImageFromDB(img.id).catch(() => {});
-  }
-  threads = threads.filter(t => t.id !== threadId);
-  saveThreadsToStorage();
-  if (currentThreadId === threadId) {
-    currentThreadId = null;
-    clearAllImages();
-    conversationHistory = [];
-    chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
-  }
-  renderThreadList();
-}
-
-function toggleThreadSaved(threadId) {
-  const thread = threads.find(t => t.id === threadId);
-  if (thread) { thread.saved = !thread.saved; saveThreadsToStorage(); renderThreadList(); }
-}
-
-function renameThread(threadId, newTitle) {
-  const thread = threads.find(t => t.id === threadId);
-  if (thread && newTitle.trim()) {
-    thread.title = newTitle.trim();
-    thread.lastModifiedAt = Date.now();
-    saveThreadsToStorage();
-  }
-}
-
-function formatThreadDate(ts) {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(diff / 3600000);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(diff / 86400000);
-  if (days < 7) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function escapeHtml(text) {
-  const d = document.createElement('div');
-  d.textContent = text;
-  return d.innerHTML;
-}
-
-function renderThreadList() {
-  const container = document.getElementById('threadList');
-  if (!container) return;
-  container.innerHTML = '';
-
-  if (threads.length === 0) {
-    container.innerHTML = '<div class="thread-empty-state">No saved threads yet.<br>Threads are created automatically when you analyze images or ask questions.</div>';
-    return;
-  }
-
-  threads.forEach(thread => {
-    const card = document.createElement('div');
-    card.className = 'thread-card' + (thread.id === currentThreadId ? ' active' : '');
-
-    const msgCount = thread.conversationHistory.filter(m => m.role === 'assistant').length;
-    const imgCount = (thread.images || []).length;
-    const notesLen = (thread.clinicalNotesText || '').length;
-
-    let thumbsHtml = '';
-    if (imgCount > 0) {
-      const thumbs = thread.images.slice(0, 3).map(img =>
-        img.thumbnailDataUrl ? `<img src="${img.thumbnailDataUrl}" class="thread-thumb" alt="">` : ''
-      ).join('');
-      const more = imgCount > 3 ? `<span class="thread-thumb-more">+${imgCount - 3}</span>` : '';
-      thumbsHtml = `<div class="thread-thumbnails">${thumbs}${more}</div>`;
+    function saveImageToDB(id, base64, dataUrl) {
+      return new Promise((resolve, reject) => {
+        if (!imageDB) { resolve(); return; }
+        const tx = imageDB.transaction('images', 'readwrite');
+        tx.objectStore('images').put({ id, base64, dataUrl });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
     }
 
-    card.innerHTML = `
+    function getImageFromDB(id) {
+      return new Promise((resolve, reject) => {
+        if (!imageDB) { resolve(null); return; }
+        const tx = imageDB.transaction('images', 'readonly');
+        const req = tx.objectStore('images').get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function deleteImageFromDB(id) {
+      return new Promise((resolve) => {
+        if (!imageDB) { resolve(); return; }
+        const tx = imageDB.transaction('images', 'readwrite');
+        tx.objectStore('images').delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    }
+
+    function generateThumbnail(dataUrl, maxSize = 80) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.5));
+        };
+        img.onerror = () => resolve('');
+        img.src = dataUrl;
+      });
+    }
+
+    function generateId(prefix) {
+      return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    }
+
+    function loadThreadsFromStorage() {
+      try {
+        const stored = localStorage.getItem('medgemma_threads');
+        threads = stored ? JSON.parse(stored) : [];
+      } catch { threads = []; }
+      cleanupExpiredThreads();
+    }
+
+    function saveThreadsToStorage() {
+      try {
+        // Strip images property from conversationHistory to save space
+        const toStore = threads.map(t => ({
+          ...t,
+          conversationHistory: t.conversationHistory.map(m => ({ role: m.role, content: m.content }))
+        }));
+        localStorage.setItem('medgemma_threads', JSON.stringify(toStore));
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          addMessage('system-msg', 'Storage full. Delete some old threads to free space.');
+        }
+      }
+    }
+
+    function cleanupExpiredThreads() {
+      const cutoff = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      const expired = threads.filter(t => !t.saved && t.createdAt < cutoff);
+      expired.forEach(t => {
+        (t.images || []).forEach(img => deleteImageFromDB(img.id).catch(() => { }));
+      });
+      threads = threads.filter(t => t.saved || t.createdAt >= cutoff);
+      saveThreadsToStorage();
+    }
+
+    function generateThreadTitle() {
+      if (loadedSlices.length > 0) {
+        const name = loadedSlices[0].fileName;
+        if (isDicomMode && loadedSlices.length > 1) return `DICOM Series (${loadedSlices.length} slices)`;
+        if (isDicomMode) return `DICOM - ${name}`;
+        const short = name.length > 30 ? name.substring(0, 27) + '...' : name;
+        return short;
+      }
+      if (conversationHistory.length > 0) {
+        const first = conversationHistory[0].content.substring(0, 50);
+        return first.length < conversationHistory[0].content.length ? first + '...' : first;
+      }
+      const d = new Date();
+      return `Session ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function hasUnsavedContent() {
+      return loadedSlices.length > 0 || conversationHistory.length > 0 || clinicalNotesText.length > 0;
+    }
+
+    async function createThreadFromCurrentState() {
+      const threadId = generateId('thread');
+      const imageMeta = [];
+      for (const slice of loadedSlices) {
+        const imgId = generateId('img');
+        await saveImageToDB(imgId, slice.base64, slice.dataUrl);
+        const thumb = await generateThumbnail(slice.dataUrl);
+        imageMeta.push({
+          id: imgId,
+          fileName: slice.fileName,
+          instanceNumber: slice.instanceNumber,
+          sliceLocation: slice.sliceLocation,
+          thumbnailDataUrl: thumb
+        });
+      }
+      const thread = {
+        id: threadId,
+        title: generateThreadTitle(),
+        createdAt: Date.now(),
+        lastModifiedAt: Date.now(),
+        saved: false,
+        conversationHistory: conversationHistory.map(m => ({ role: m.role, content: m.content })),
+        clinicalNotesText,
+        clinicalNotesSource,
+        notesInjected,
+        images: imageMeta,
+        isDicomMode,
+        selectedSliceIndices: [...selectedSliceIndices]
+      };
+      threads.unshift(thread);
+      saveThreadsToStorage();
+      currentThreadId = threadId;
+      renderThreadList();
+      return thread;
+    }
+
+    async function updateCurrentThread() {
+      if (!currentThreadId) {
+        if (hasUnsavedContent()) await createThreadFromCurrentState();
+        return;
+      }
+      const thread = threads.find(t => t.id === currentThreadId);
+      if (!thread) return;
+      thread.conversationHistory = conversationHistory.map(m => ({ role: m.role, content: m.content }));
+      thread.clinicalNotesText = clinicalNotesText;
+      thread.clinicalNotesSource = clinicalNotesSource;
+      thread.notesInjected = notesInjected;
+      thread.lastModifiedAt = Date.now();
+      if (!thread.title || thread.title.startsWith('Session ')) thread.title = generateThreadTitle();
+      saveThreadsToStorage();
+      renderThreadList();
+    }
+
+    async function loadThread(threadId) {
+      const thread = threads.find(t => t.id === threadId);
+      if (!thread) return;
+
+      // Clear current state
+      clearAllImages();
+      conversationHistory = [];
+      chatMessages.innerHTML = '';
+      clinicalNotesText = '';
+      clinicalNotesSource = '';
+      notesInjected = false;
+      notesTextarea.value = '';
+      updateNotesCharCount();
+      notesIndicator.classList.remove('visible');
+
+      // Load images from IndexedDB
+      loadedSlices = [];
+      for (const imgMeta of thread.images) {
+        const imgData = await getImageFromDB(imgMeta.id);
+        if (imgData) {
+          loadedSlices.push({
+            base64: imgData.base64,
+            dataUrl: imgData.dataUrl,
+            fileName: imgMeta.fileName,
+            instanceNumber: imgMeta.instanceNumber,
+            sliceLocation: imgMeta.sliceLocation
+          });
+        }
+      }
+
+      selectedSliceIndices = [...(thread.selectedSliceIndices || [])];
+      isDicomMode = thread.isDicomMode || false;
+
+      if (loadedSlices.length > 0) {
+        currentPreviewIndex = 0;
+        previewImg.src = loadedSlices[0].dataUrl;
+        dropZone.classList.add('has-image');
+        clearBtn.disabled = false;
+        analyzeBtn.disabled = selectedSliceIndices.length === 0;
+        if (loadedSlices.length > 1) {
+          buildSliceGallery();
+          sliceGalleryContainer.classList.add('visible');
+        }
+        if (isDicomMode) dicomInfo.classList.add('visible');
+      }
+
+      // Restore notes
+      clinicalNotesText = thread.clinicalNotesText || '';
+      clinicalNotesSource = thread.clinicalNotesSource || '';
+      notesInjected = thread.notesInjected || false;
+      if (clinicalNotesText) {
+        notesTextarea.value = clinicalNotesText;
+        updateNotesCharCount();
+        showNotesIndicator();
+      }
+
+      // Restore conversation history and rebuild chat DOM
+      conversationHistory = (thread.conversationHistory || []).map(m => ({ role: m.role, content: m.content }));
+      // Re-attach images to the first user message that had them
+      if (loadedSlices.length > 0) {
+        const firstUser = conversationHistory.find(m => m.role === 'user');
+        if (firstUser) firstUser.images = loadedSlices.map(s => s.base64);
+      }
+      for (const msg of conversationHistory) {
+        if (msg.role === 'user') addMessage('user', msg.content);
+        else if (msg.role === 'assistant') addMessage('assistant', msg.content);
+      }
+
+      currentThreadId = threadId;
+      thread.lastModifiedAt = Date.now();
+      saveThreadsToStorage();
+
+      // Switch to Images tab
+      document.querySelector('[data-tab="images"]').click();
+    }
+
+    async function deleteThread(threadId) {
+      const thread = threads.find(t => t.id === threadId);
+      if (!thread) return;
+      for (const img of (thread.images || [])) {
+        await deleteImageFromDB(img.id).catch(() => { });
+      }
+      threads = threads.filter(t => t.id !== threadId);
+      saveThreadsToStorage();
+      if (currentThreadId === threadId) {
+        currentThreadId = null;
+        clearAllImages();
+        conversationHistory = [];
+        chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
+      }
+      renderThreadList();
+    }
+
+    function toggleThreadSaved(threadId) {
+      const thread = threads.find(t => t.id === threadId);
+      if (thread) { thread.saved = !thread.saved; saveThreadsToStorage(); renderThreadList(); }
+    }
+
+    function renameThread(threadId, newTitle) {
+      const thread = threads.find(t => t.id === threadId);
+      if (thread && newTitle.trim()) {
+        thread.title = newTitle.trim();
+        thread.lastModifiedAt = Date.now();
+        saveThreadsToStorage();
+      }
+    }
+
+    function formatThreadDate(ts) {
+      const diff = Date.now() - ts;
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return t('timeJustNow');
+      if (mins < 60) return t('timeAgoM', { m: mins });
+      const hrs = Math.floor(diff / 3600000);
+      if (hrs < 24) return t('timeAgoH', { h: hrs });
+      const days = Math.floor(diff / 86400000);
+      if (days < 7) return t('timeAgoD', { d: days });
+      return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function renderThreadList() {
+      const container = document.getElementById('threadList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (threads.length === 0) {
+        container.innerHTML = `<div class="thread-empty-state">${t('threadsEmpty')}</div>`;
+        return;
+      }
+
+      threads.forEach(thread => {
+        const card = document.createElement('div');
+        card.className = 'thread-card' + (thread.id === currentThreadId ? ' active' : '');
+
+        const msgCount = thread.conversationHistory.filter(m => m.role === 'assistant').length;
+        const imgCount = (thread.images || []).length;
+        const notesLen = (thread.clinicalNotesText || '').length;
+
+        let thumbsHtml = '';
+        if (imgCount > 0) {
+          const thumbs = thread.images.slice(0, 3).map(img =>
+            img.thumbnailDataUrl ? `<img src="${img.thumbnailDataUrl}" class="thread-thumb" alt="">` : ''
+          ).join('');
+          const more = imgCount > 3 ? `<span class="thread-thumb-more">+${imgCount - 3}</span>` : '';
+          thumbsHtml = `<div class="thread-thumbnails">${thumbs}${more}</div>`;
+        }
+
+        card.innerHTML = `
       <div class="thread-card-header">
         <input class="thread-title" value="${escapeHtml(thread.title)}" spellcheck="false">
         <button class="thread-save-btn ${thread.saved ? 'saved' : ''}" title="${thread.saved ? 'Unsave' : 'Save (keep beyond 30 days)'}">
@@ -880,729 +1527,723 @@ function renderThreadList() {
       </div>
     `;
 
-    card.querySelector('.thread-load-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      loadThread(thread.id);
-    });
-
-    card.querySelector('.thread-save-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleThreadSaved(thread.id);
-    });
-
-    card.querySelector('.thread-delete-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (confirm(`Delete "${thread.title}"?`)) deleteThread(thread.id);
-    });
-
-    const titleInput = card.querySelector('.thread-title');
-    titleInput.addEventListener('change', () => renameThread(thread.id, titleInput.value));
-    titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleInput.blur(); } });
-
-    container.appendChild(card);
-  });
-}
-
-// ── Status check ──
-async function checkOllama() {
-  try {
-    const res = await fetch(OLLAMA_BASE + '/api/tags');
-    if (res.ok) { statusDot.classList.add('connected'); statusText.textContent = 'Ollama connected'; return true; }
-  } catch(e) {}
-  statusDot.classList.remove('connected');
-  statusText.textContent = 'Ollama not reachable';
-  return false;
-}
-checkOllama();
-setInterval(checkOllama, 10000);
-
-// ── Tab switching ──
-const tabMap = { images: 'tabImages', notes: 'tabNotes', threads: 'tabThreads' };
-document.querySelectorAll('.panel-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(tabMap[tab.dataset.tab]).classList.add('active');
-    if (tab.dataset.tab === 'threads') renderThreadList();
-  });
-});
-
-// ════════════════════════════════════════
-//  IMAGE / DICOM HANDLING
-// ════════════════════════════════════════
-
-function clearAllImages() {
-  loadedSlices = [];
-  selectedSliceIndices = [];
-  currentPreviewIndex = -1;
-  isDicomMode = false;
-  previewImg.src = '';
-  dropZone.classList.remove('has-image');
-  clearBtn.disabled = true;
-  analyzeBtn.disabled = true;
-  fileInput.value = '';
-  folderInput.value = '';
-  sliceGallery.innerHTML = '';
-  sliceGalleryContainer.classList.remove('visible');
-  dicomInfo.classList.remove('visible');
-  loadingBar.classList.remove('visible');
-  updateSliceCountLabel();
-}
-
-function loadSingleImage(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    const base64 = dataUrl.split(',')[1];
-    loadedSlices = [{ base64, fileName: file.name, instanceNumber: 0, dataUrl }];
-    selectedSliceIndices = [0];
-    currentPreviewIndex = 0;
-    isDicomMode = false;
-    previewImg.src = dataUrl;
-    dropZone.classList.add('has-image');
-    clearBtn.disabled = false;
-    analyzeBtn.disabled = false;
-    sliceGalleryContainer.classList.remove('visible');
-    dicomInfo.classList.remove('visible');
-  };
-  reader.readAsDataURL(file);
-}
-
-// ── DICOM processing ──
-function applyWindow(hu, windowWidth, windowLevel) {
-  const min = windowLevel - windowWidth / 2;
-  const max = windowLevel + windowWidth / 2;
-  return Math.max(0, Math.min(255, Math.round(((hu - min) / (max - min)) * 255)));
-}
-
-function processDicomToBase64(arrayBuffer) {
-  const byteArray = new Uint8Array(arrayBuffer);
-  const dataSet = dicomParser.parseDicom(byteArray);
-
-  const rows = dataSet.uint16('x00280010');
-  const cols = dataSet.uint16('x00280011');
-  const bitsAllocated = dataSet.uint16('x00280100');
-  const pixelRep = dataSet.uint16('x00280103') || 0;
-  const slope = parseFloat(dataSet.string('x00281053') || '1');
-  const intercept = parseFloat(dataSet.string('x00281052') || '0');
-  const instanceNumber = parseInt(dataSet.string('x00200013') || '0');
-  const sliceLocation = parseFloat(dataSet.string('x00201041') || '0');
-
-  // Check transfer syntax (only uncompressed supported)
-  const transferSyntax = dataSet.string('x00020010') || '';
-  const uncompressedSyntaxes = ['1.2.840.10008.1.2', '1.2.840.10008.1.2.1', '1.2.840.10008.1.2.2'];
-  if (transferSyntax && !uncompressedSyntaxes.includes(transferSyntax.trim())) {
-    throw new Error('Compressed DICOM not supported. Export as uncompressed or use PNG/JPEG.');
-  }
-
-  const pixelDataElement = dataSet.elements.x7fe00010;
-  if (!pixelDataElement) throw new Error('No pixel data found in DICOM file.');
-
-  let pixelArray;
-  if (bitsAllocated === 16) {
-    pixelArray = pixelRep === 1
-      ? new Int16Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length / 2)
-      : new Uint16Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length / 2);
-  } else if (bitsAllocated === 8) {
-    pixelArray = new Uint8Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length);
-  } else {
-    throw new Error(`Unsupported bits allocated: ${bitsAllocated}`);
-  }
-
-  // Convert to HU and apply 3-channel MedGemma windowing
-  const canvas = document.createElement('canvas');
-  canvas.width = cols;
-  canvas.height = rows;
-  const ctx = canvas.getContext('2d');
-  const imageData = ctx.createImageData(cols, rows);
-
-  for (let i = 0; i < rows * cols; i++) {
-    const hu = pixelArray[i] * slope + intercept;
-    imageData.data[i * 4]     = applyWindow(hu, 2250, -100); // R: bone/lung
-    imageData.data[i * 4 + 1] = applyWindow(hu, 350, 40);    // G: soft tissue
-    imageData.data[i * 4 + 2] = applyWindow(hu, 80, 40);     // B: brain
-    imageData.data[i * 4 + 3] = 255;
-  }
-  ctx.putImageData(imageData, 0, 0);
-
-  const dataUrl = canvas.toDataURL('image/png');
-  const base64 = dataUrl.split(',')[1];
-  return { base64, dataUrl, instanceNumber, sliceLocation };
-}
-
-function isDicomFile(file) {
-  const name = file.name.toLowerCase();
-  // Explicit .dcm extension
-  if (name.endsWith('.dcm')) return true;
-  // DICOM files often have no extension — check for no extension + no image MIME type
-  // but only if the file has no recognizable image/text/pdf type
-  if (!name.includes('.') && !file.type) return true;
-  // Some DICOM series use numeric-only filenames (e.g., "000001", "IM00001")
-  if (!file.type && /^(IM)?\d+$/i.test(file.name)) return true;
-  return false;
-}
-
-function isImageFile(file) {
-  if (file.type && file.type.startsWith('image/')) return true;
-  // Fallback: check common image extensions if browser didn't set MIME type
-  const ext = file.name.toLowerCase().split('.').pop();
-  return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff', 'tif', 'svg'].includes(ext);
-}
-
-async function loadMultipleFiles(files) {
-  const fileArray = Array.from(files);
-
-  // Single file shortcut: if only one file and it's not explicitly .dcm, load as image
-  if (fileArray.length === 1 && !isDicomFile(fileArray[0])) {
-    loadSingleImage(fileArray[0]);
-    return;
-  }
-
-  // Classify each file
-  const dicomFiles = fileArray.filter(f => isDicomFile(f));
-  const imageFiles = fileArray.filter(f => !isDicomFile(f) && isImageFile(f));
-
-  // If we have no recognizable files, try treating unknowns as images
-  if (dicomFiles.length === 0 && imageFiles.length === 0) {
-    if (fileArray.length === 1) {
-      loadSingleImage(fileArray[0]);
-      return;
-    }
-  }
-
-  // Single regular image (most common case: X-ray, dermatology photo, screenshot)
-  if (dicomFiles.length === 0 && imageFiles.length === 1) {
-    loadSingleImage(imageFiles[0]);
-    return;
-  }
-
-  // Multiple regular images (e.g. exported slices as PNG/JPEG)
-  if (dicomFiles.length === 0 && imageFiles.length > 1) {
-    isDicomMode = false;
-    loadedSlices = [];
-    loadingBar.classList.add('visible');
-
-    for (let i = 0; i < imageFiles.length; i++) {
-      loadingBarFill.style.width = `${((i + 1) / imageFiles.length) * 100}%`;
-      const dataUrl = await readFileAsDataURL(imageFiles[i]);
-      loadedSlices.push({
-        base64: dataUrl.split(',')[1],
-        dataUrl,
-        fileName: imageFiles[i].name,
-        instanceNumber: i
-      });
-    }
-
-    loadingBar.classList.remove('visible');
-    finishMultiSliceLoad();
-    return;
-  }
-
-  // Single DICOM file — still process through DICOM pipeline
-  // Multiple DICOM files — full series mode
-  isDicomMode = true;
-  loadedSlices = [];
-  let processed = 0;
-  let errors = 0;
-  loadingBar.classList.add('visible');
-
-  const filesToProcess = dicomFiles.length > 0 ? dicomFiles : fileArray;
-
-  for (let i = 0; i < filesToProcess.length; i++) {
-    loadingBarFill.style.width = `${((i + 1) / filesToProcess.length) * 100}%`;
-    try {
-      const buffer = await filesToProcess[i].arrayBuffer();
-      const result = processDicomToBase64(buffer);
-      loadedSlices.push({
-        base64: result.base64,
-        dataUrl: result.dataUrl,
-        fileName: filesToProcess[i].name,
-        instanceNumber: result.instanceNumber,
-        sliceLocation: result.sliceLocation
-      });
-      processed++;
-    } catch (err) {
-      console.warn(`Skipping ${filesToProcess[i].name}: ${err.message}`);
-      errors++;
-    }
-    // Yield to keep UI responsive
-    if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
-  }
-
-  loadingBar.classList.remove('visible');
-
-  // If all DICOM processing failed, fall back to loading as regular images
-  if (loadedSlices.length === 0) {
-    isDicomMode = false;
-    // Try image files first, then all files as fallback
-    const fallbackFiles = imageFiles.length > 0 ? imageFiles : fileArray;
-    if (fallbackFiles.length === 1) {
-      loadSingleImage(fallbackFiles[0]);
-      return;
-    } else if (fallbackFiles.length > 1) {
-      loadedSlices = [];
-      for (let i = 0; i < fallbackFiles.length; i++) {
-        const dataUrl = await readFileAsDataURL(fallbackFiles[i]);
-        loadedSlices.push({
-          base64: dataUrl.split(',')[1],
-          dataUrl,
-          fileName: fallbackFiles[i].name,
-          instanceNumber: i
+        card.querySelector('.thread-load-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          loadThread(thread.id);
         });
+
+        card.querySelector('.thread-save-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleThreadSaved(thread.id);
+        });
+
+        card.querySelector('.thread-delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete "${thread.title}"?`)) deleteThread(thread.id);
+        });
+
+        const titleInput = card.querySelector('.thread-title');
+        titleInput.addEventListener('change', () => renameThread(thread.id, titleInput.value));
+        titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleInput.blur(); } });
+
+        container.appendChild(card);
+      });
+    }
+
+    // ── Status check ──
+    async function checkOllama() {
+      try {
+        const res = await fetch(OLLAMA_BASE + '/api/tags');
+        if (res.ok) { statusDot.classList.add('connected'); statusText.textContent = t('statusConnected'); return true; }
+      } catch (e) { }
+      statusDot.classList.remove('connected');
+      statusText.textContent = t('statusNotReachable');
+      return false;
+    }
+    checkOllama();
+    setInterval(checkOllama, 10000);
+
+    // ── Tab switching ──
+    const tabMap = { images: 'tabImages', notes: 'tabNotes', threads: 'tabThreads' };
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tabMap[tab.dataset.tab]).classList.add('active');
+        if (tab.dataset.tab === 'threads') renderThreadList();
+      });
+    });
+
+    // ════════════════════════════════════════
+    //  IMAGE / DICOM HANDLING
+    // ════════════════════════════════════════
+
+    function clearAllImages() {
+      loadedSlices = [];
+      selectedSliceIndices = [];
+      currentPreviewIndex = -1;
+      isDicomMode = false;
+      previewImg.src = '';
+      dropZone.classList.remove('has-image');
+      clearBtn.disabled = true;
+      analyzeBtn.disabled = true;
+      fileInput.value = '';
+      folderInput.value = '';
+      sliceGallery.innerHTML = '';
+      sliceGalleryContainer.classList.remove('visible');
+      dicomInfo.classList.remove('visible');
+      loadingBar.classList.remove('visible');
+      updateSliceCountLabel();
+    }
+
+    function loadSingleImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        const base64 = dataUrl.split(',')[1];
+        loadedSlices = [{ base64, fileName: file.name, instanceNumber: 0, dataUrl }];
+        selectedSliceIndices = [0];
+        currentPreviewIndex = 0;
+        isDicomMode = false;
+        previewImg.src = dataUrl;
+        dropZone.classList.add('has-image');
+        clearBtn.disabled = false;
+        analyzeBtn.disabled = false;
+        sliceGalleryContainer.classList.remove('visible');
+        dicomInfo.classList.remove('visible');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── DICOM processing ──
+    function applyWindow(hu, windowWidth, windowLevel) {
+      const min = windowLevel - windowWidth / 2;
+      const max = windowLevel + windowWidth / 2;
+      return Math.max(0, Math.min(255, Math.round(((hu - min) / (max - min)) * 255)));
+    }
+
+    function processDicomToBase64(arrayBuffer) {
+      const byteArray = new Uint8Array(arrayBuffer);
+      const dataSet = dicomParser.parseDicom(byteArray);
+
+      const rows = dataSet.uint16('x00280010');
+      const cols = dataSet.uint16('x00280011');
+      const bitsAllocated = dataSet.uint16('x00280100');
+      const pixelRep = dataSet.uint16('x00280103') || 0;
+      const slope = parseFloat(dataSet.string('x00281053') || '1');
+      const intercept = parseFloat(dataSet.string('x00281052') || '0');
+      const instanceNumber = parseInt(dataSet.string('x00200013') || '0');
+      const sliceLocation = parseFloat(dataSet.string('x00201041') || '0');
+
+      // Check transfer syntax (only uncompressed supported)
+      const transferSyntax = dataSet.string('x00020010') || '';
+      const uncompressedSyntaxes = ['1.2.840.10008.1.2', '1.2.840.10008.1.2.1', '1.2.840.10008.1.2.2'];
+      if (transferSyntax && !uncompressedSyntaxes.includes(transferSyntax.trim())) {
+        throw new Error('Compressed DICOM not supported. Export as uncompressed or use PNG/JPEG.');
       }
-      if (loadedSlices.length > 0) {
+
+      const pixelDataElement = dataSet.elements.x7fe00010;
+      if (!pixelDataElement) throw new Error('No pixel data found in DICOM file.');
+
+      let pixelArray;
+      if (bitsAllocated === 16) {
+        pixelArray = pixelRep === 1
+          ? new Int16Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length / 2)
+          : new Uint16Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length / 2);
+      } else if (bitsAllocated === 8) {
+        pixelArray = new Uint8Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length);
+      } else {
+        throw new Error(`Unsupported bits allocated: ${bitsAllocated}`);
+      }
+
+      // Convert to HU and apply 3-channel MedGemma windowing
+      const canvas = document.createElement('canvas');
+      canvas.width = cols;
+      canvas.height = rows;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(cols, rows);
+
+      for (let i = 0; i < rows * cols; i++) {
+        const hu = pixelArray[i] * slope + intercept;
+        imageData.data[i * 4] = applyWindow(hu, 2250, -100); // R: bone/lung
+        imageData.data[i * 4 + 1] = applyWindow(hu, 350, 40);    // G: soft tissue
+        imageData.data[i * 4 + 2] = applyWindow(hu, 80, 40);     // B: brain
+        imageData.data[i * 4 + 3] = 255;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64 = dataUrl.split(',')[1];
+      return { base64, dataUrl, instanceNumber, sliceLocation };
+    }
+
+    function isDicomFile(file) {
+      const name = file.name.toLowerCase();
+      // Explicit .dcm extension
+      if (name.endsWith('.dcm')) return true;
+      // DICOM files often have no extension — check for no extension + no image MIME type
+      // but only if the file has no recognizable image/text/pdf type
+      if (!name.includes('.') && !file.type) return true;
+      // Some DICOM series use numeric-only filenames (e.g., "000001", "IM00001")
+      if (!file.type && /^(IM)?\d+$/i.test(file.name)) return true;
+      return false;
+    }
+
+    function isImageFile(file) {
+      if (file.type && file.type.startsWith('image/')) return true;
+      // Fallback: check common image extensions if browser didn't set MIME type
+      const ext = file.name.toLowerCase().split('.').pop();
+      return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff', 'tif', 'svg'].includes(ext);
+    }
+
+    async function loadMultipleFiles(files) {
+      const fileArray = Array.from(files);
+
+      // Single file shortcut: if only one file and it's not explicitly .dcm, load as image
+      if (fileArray.length === 1 && !isDicomFile(fileArray[0])) {
+        loadSingleImage(fileArray[0]);
+        return;
+      }
+
+      // Classify each file
+      const dicomFiles = fileArray.filter(f => isDicomFile(f));
+      const imageFiles = fileArray.filter(f => !isDicomFile(f) && isImageFile(f));
+
+      // If we have no recognizable files, try treating unknowns as images
+      if (dicomFiles.length === 0 && imageFiles.length === 0) {
+        if (fileArray.length === 1) {
+          loadSingleImage(fileArray[0]);
+          return;
+        }
+      }
+
+      // Single regular image (most common case: X-ray, dermatology photo, screenshot)
+      if (dicomFiles.length === 0 && imageFiles.length === 1) {
+        loadSingleImage(imageFiles[0]);
+        return;
+      }
+
+      // Multiple regular images (e.g. exported slices as PNG/JPEG)
+      if (dicomFiles.length === 0 && imageFiles.length > 1) {
+        isDicomMode = false;
+        loadedSlices = [];
+        loadingBar.classList.add('visible');
+
+        for (let i = 0; i < imageFiles.length; i++) {
+          loadingBarFill.style.width = `${((i + 1) / imageFiles.length) * 100}%`;
+          const dataUrl = await readFileAsDataURL(imageFiles[i]);
+          loadedSlices.push({
+            base64: dataUrl.split(',')[1],
+            dataUrl,
+            fileName: imageFiles[i].name,
+            instanceNumber: i
+          });
+        }
+
+        loadingBar.classList.remove('visible');
         finishMultiSliceLoad();
         return;
       }
-    }
-    addMessage('system-msg', `Could not process any files. ${errors} files had errors. Try exporting as PNG or JPEG.`);
-    return;
-  }
 
-  // Sort by instance number then slice location
-  loadedSlices.sort((a, b) => a.instanceNumber - b.instanceNumber || (a.sliceLocation || 0) - (b.sliceLocation || 0));
+      // Single DICOM file — still process through DICOM pipeline
+      // Multiple DICOM files — full series mode
+      isDicomMode = true;
+      loadedSlices = [];
+      let processed = 0;
+      let errors = 0;
+      loadingBar.classList.add('visible');
 
-  dicomInfo.classList.add('visible');
-  dicomInfoText.textContent = `${processed} slices loaded` + (errors > 0 ? `, ${errors} skipped` : '') + ' | 3-channel windowed (R=bone, G=tissue, B=brain)';
+      const filesToProcess = dicomFiles.length > 0 ? dicomFiles : fileArray;
 
-  if (loadedSlices.length === 1) {
-    // Single DICOM slice — show in preview without gallery
-    currentPreviewIndex = 0;
-    selectedSliceIndices = [0];
-    previewImg.src = loadedSlices[0].dataUrl;
-    dropZone.classList.add('has-image');
-    clearBtn.disabled = false;
-    analyzeBtn.disabled = false;
-    sliceGalleryContainer.classList.remove('visible');
-  } else {
-    finishMultiSliceLoad();
-  }
-}
-
-function finishMultiSliceLoad() {
-  // Show first slice in preview
-  currentPreviewIndex = 0;
-  previewImg.src = loadedSlices[0].dataUrl;
-  dropZone.classList.add('has-image');
-  clearBtn.disabled = false;
-
-  // Auto-select representative slices
-  autoSelectSlices();
-
-  // Build gallery
-  buildSliceGallery();
-  sliceGalleryContainer.classList.add('visible');
-  analyzeBtn.disabled = false;
-}
-
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// ── Slice gallery ──
-function buildSliceGallery() {
-  sliceGallery.innerHTML = '';
-  loadedSlices.forEach((slice, i) => {
-    const img = document.createElement('img');
-    img.className = 'slice-thumb';
-    img.src = slice.dataUrl;
-    img.title = `${slice.fileName} (#${slice.instanceNumber})`;
-    if (i === currentPreviewIndex) img.classList.add('viewing');
-    if (selectedSliceIndices.includes(i)) img.classList.add('selected');
-
-    img.addEventListener('click', (e) => {
-      if (e.shiftKey || e.metaKey || e.ctrlKey) {
-        // Toggle selection
-        toggleSliceSelection(i);
-      } else {
-        // View this slice
-        currentPreviewIndex = i;
-        previewImg.src = slice.dataUrl;
-        updateGalleryHighlights();
-      }
-    });
-
-    img.addEventListener('dblclick', () => {
-      toggleSliceSelection(i);
-    });
-
-    sliceGallery.appendChild(img);
-  });
-  updateSliceCountLabel();
-}
-
-function toggleSliceSelection(index) {
-  const pos = selectedSliceIndices.indexOf(index);
-  if (pos >= 0) {
-    selectedSliceIndices.splice(pos, 1);
-  } else {
-    selectedSliceIndices.push(index);
-    selectedSliceIndices.sort((a, b) => a - b);
-  }
-  updateGalleryHighlights();
-  updateSliceCountLabel();
-  analyzeBtn.disabled = selectedSliceIndices.length === 0;
-}
-
-function autoSelectSlices() {
-  const count = loadedSlices.length;
-  if (count <= 8) {
-    selectedSliceIndices = loadedSlices.map((_, i) => i);
-  } else {
-    const n = Math.min(6, count);
-    selectedSliceIndices = [];
-    for (let i = 0; i < n; i++) {
-      selectedSliceIndices.push(Math.round((i / (n - 1)) * (count - 1)));
-    }
-  }
-  updateGalleryHighlights();
-  updateSliceCountLabel();
-  analyzeBtn.disabled = false;
-}
-
-function updateGalleryHighlights() {
-  sliceGallery.querySelectorAll('.slice-thumb').forEach((img, i) => {
-    img.classList.toggle('viewing', i === currentPreviewIndex);
-    img.classList.toggle('selected', selectedSliceIndices.includes(i));
-  });
-}
-
-function updateSliceCountLabel() {
-  if (loadedSlices.length <= 1) {
-    sliceCountLabel.textContent = '';
-    return;
-  }
-  sliceCountLabel.textContent = `${selectedSliceIndices.length} of ${loadedSlices.length} slices selected`;
-}
-
-autoSelectBtn.addEventListener('click', () => { autoSelectSlices(); buildSliceGallery(); });
-selectAllBtn.addEventListener('click', () => {
-  selectedSliceIndices = loadedSlices.map((_, i) => i);
-  updateGalleryHighlights();
-  updateSliceCountLabel();
-  analyzeBtn.disabled = false;
-});
-
-// ── Upload handlers ──
-dropZone.addEventListener('click', () => {
-  if (!dropZone.classList.contains('has-image')) fileInput.click();
-});
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length > 0) {
-    const files = Array.from(fileInput.files);
-    clearAllImages();
-    loadMultipleFiles(files);
-  }
-});
-
-uploadFolderBtn.addEventListener('click', () => folderInput.click());
-folderInput.addEventListener('change', () => {
-  if (folderInput.files.length > 0) {
-    const files = Array.from(folderInput.files);
-    clearAllImages();
-    loadMultipleFiles(files);
-  }
-});
-
-// Drag and drop
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files.length > 0) {
-    clearAllImages();
-    loadMultipleFiles(e.dataTransfer.files);
-  }
-});
-
-// Paste from clipboard
-document.addEventListener('paste', (e) => {
-  // Don't intercept if typing in notes textarea
-  if (document.activeElement === notesTextarea) return;
-  const items = e.clipboardData?.items;
-  if (!items) return;
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      e.preventDefault();
-      clearAllImages();
-      loadSingleImage(item.getAsFile());
-      return;
-    }
-  }
-});
-
-clearBtn.addEventListener('click', clearAllImages);
-
-// ════════════════════════════════════════
-//  CLINICAL NOTES
-// ════════════════════════════════════════
-
-function updateNotesCharCount() {
-  const len = notesTextarea.value.length;
-  notesCharCount.textContent = `${len.toLocaleString()} chars`;
-  notesCharCount.classList.toggle('warning', len > 4000);
-}
-
-notesTextarea.addEventListener('input', updateNotesCharCount);
-
-// File upload
-notesDropZone.addEventListener('click', () => notesFileInput.click());
-notesDropZone.addEventListener('dragover', (e) => { e.preventDefault(); notesDropZone.classList.add('drag-over'); });
-notesDropZone.addEventListener('dragleave', () => { notesDropZone.classList.remove('drag-over'); });
-notesDropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  notesDropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) loadNotesFile(e.dataTransfer.files[0]);
-});
-notesFileInput.addEventListener('change', () => {
-  if (notesFileInput.files[0]) loadNotesFile(notesFileInput.files[0]);
-});
-
-async function loadNotesFile(file) {
-  const name = file.name.toLowerCase();
-  try {
-    if (name.endsWith('.pdf')) {
-      if (typeof pdfjsLib === 'undefined') {
-        throw new Error('PDF.js library not loaded. Check your internet connection and reload.');
-      }
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      let text = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ') + '\n\n';
-      }
-      notesTextarea.value = text.trim();
-      clinicalNotesSource = `file: ${file.name}`;
-    } else {
-      // .txt or any text file
-      const text = await file.text();
-      notesTextarea.value = text;
-      clinicalNotesSource = `file: ${file.name}`;
-    }
-    updateNotesCharCount();
-  } catch (err) {
-    addMessage('system-msg', `Error reading file: ${err.message}`);
-  }
-}
-
-loadNotesBtn.addEventListener('click', () => {
-  const text = notesTextarea.value.trim();
-  if (!text) return;
-  clinicalNotesText = text;
-  notesInjected = false;
-  if (!clinicalNotesSource) clinicalNotesSource = 'pasted';
-  showNotesIndicator();
-  addMessage('system-msg', `Clinical notes loaded (${text.length.toLocaleString()} chars). Notes will be included as context in your next message.`);
-});
-
-function showNotesIndicator() {
-  notesIndicator.classList.add('visible');
-  const label = clinicalNotesSource.startsWith('file:')
-    ? clinicalNotesSource.replace('file: ', '')
-    : 'Pasted notes';
-  notesIndicatorText.textContent = `${label} (${clinicalNotesText.length.toLocaleString()} chars)`;
-}
-
-function clearNotes() {
-  clinicalNotesText = '';
-  clinicalNotesSource = '';
-  notesInjected = false;
-  notesTextarea.value = '';
-  notesFileInput.value = '';
-  notesIndicator.classList.remove('visible');
-  updateNotesCharCount();
-}
-
-clearNotesBtn.addEventListener('click', clearNotes);
-clearNotesIndicatorBtn.addEventListener('click', clearNotes);
-
-// ════════════════════════════════════════
-//  CHAT
-// ════════════════════════════════════════
-
-function addMessage(role, text) {
-  const div = document.createElement('div');
-  div.className = `message ${role}`;
-  div.textContent = text;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  return div;
-}
-
-function createStreamingMessage() {
-  const div = document.createElement('div');
-  div.className = 'message assistant streaming';
-  div.textContent = '';
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  return div;
-}
-
-function buildPromptWithContext(userText) {
-  if (clinicalNotesText && !notesInjected) {
-    notesInjected = true;
-    return `Clinical Notes Context:\n---\n${clinicalNotesText}\n---\n\n${userText}`;
-  }
-  return userText;
-}
-
-async function sendToOllama(userText, imageBase64Array) {
-  if (isStreaming) return;
-  isStreaming = true;
-  sendBtn.disabled = true;
-  analyzeBtn.disabled = true;
-
-  const model = modelNameInput.value.trim() || 'medgemma-vision';
-  const promptText = buildPromptWithContext(userText);
-
-  const userMsg = { role: 'user', content: promptText };
-  if (imageBase64Array && imageBase64Array.length > 0) {
-    userMsg.images = imageBase64Array;
-  }
-  conversationHistory.push(userMsg);
-
-  // Show the original text to user (not the full context-injected version)
-  addMessage('user', userText);
-
-  const streamDiv = createStreamingMessage();
-  let fullResponse = '';
-
-  try {
-    const res = await fetch(OLLAMA_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages: conversationHistory, stream: true })
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Ollama returned ${res.status}: ${errText}`);
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(l => l.trim());
-      for (const line of lines) {
+      for (let i = 0; i < filesToProcess.length; i++) {
+        loadingBarFill.style.width = `${((i + 1) / filesToProcess.length) * 100}%`;
         try {
-          const json = JSON.parse(line);
-          if (json.message?.content) {
-            fullResponse += json.message.content;
-            streamDiv.textContent = fullResponse;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+          const buffer = await filesToProcess[i].arrayBuffer();
+          const result = processDicomToBase66(buffer);
+          loadedSlices.push({
+            base64: result.base64,
+            dataUrl: result.dataUrl,
+            fileName: filesToProcess[i].name,
+            instanceNumber: result.instanceNumber,
+            sliceLocation: result.sliceLocation
+          });
+          processed++;
+        } catch (err) {
+          console.warn(`Skipping ${filesToProcess[i].name}: ${err.message}`);
+          errors++;
+        }
+        // Yield to keep UI responsive
+        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+
+      loadingBar.classList.remove('visible');
+
+      // If all DICOM processing failed, fall back to loading as regular images
+      if (loadedSlices.length === 0) {
+        isDicomMode = false;
+        // Try image files first, then all files as fallback
+        const fallbackFiles = imageFiles.length > 0 ? imageFiles : fileArray;
+        if (fallbackFiles.length === 1) {
+          loadSingleImage(fallbackFiles[0]);
+          return;
+        } else if (fallbackFiles.length > 1) {
+          loadedSlices = [];
+          for (let i = 0; i < fallbackFiles.length; i++) {
+            const dataUrl = await readFileAsDataURL(fallbackFiles[i]);
+            loadedSlices.push({
+              base64: dataUrl.split(',')[1],
+              dataUrl,
+              fileName: fallbackFiles[i].name,
+              instanceNumber: i
+            });
           }
-        } catch(parseErr) {}
+          if (loadedSlices.length > 0) {
+            finishMultiSliceLoad();
+            return;
+          }
+        }
+        addMessage('system-msg', `Could not process any files. ${errors} files had errors. Try exporting as PNG or JPEG.`);
+        return;
+      }
+
+      // Sort by instance number then slice location
+      loadedSlices.sort((a, b) => a.instanceNumber - b.instanceNumber || (a.sliceLocation || 0) - (b.sliceLocation || 0));
+
+      dicomInfo.classList.add('visible');
+      dicomInfoText.textContent = `${processed} slices loaded` + (errors > 0 ? `, ${errors} skipped` : '') + ' | 3-channel windowed (R=bone, G=tissue, B=brain)';
+
+      if (loadedSlices.length === 1) {
+        // Single DICOM slice — show in preview without gallery
+        currentPreviewIndex = 0;
+        selectedSliceIndices = [0];
+        previewImg.src = loadedSlices[0].dataUrl;
+        dropZone.classList.add('has-image');
+        clearBtn.disabled = false;
+        analyzeBtn.disabled = false;
+        sliceGalleryContainer.classList.remove('visible');
+      } else {
+        finishMultiSliceLoad();
       }
     }
 
-    streamDiv.classList.remove('streaming');
-    conversationHistory.push({ role: 'assistant', content: fullResponse });
-    updateCurrentThread();
+    function finishMultiSliceLoad() {
+      // Show first slice in preview
+      currentPreviewIndex = 0;
+      previewImg.src = loadedSlices[0].dataUrl;
+      dropZone.classList.add('has-image');
+      clearBtn.disabled = false;
 
-  } catch(err) {
-    streamDiv.classList.remove('streaming');
-    streamDiv.textContent = 'Error: ' + err.message;
-    streamDiv.style.color = 'var(--red)';
-  } finally {
-    isStreaming = false;
-    sendBtn.disabled = false;
-    if (loadedSlices.length > 0 && selectedSliceIndices.length > 0) analyzeBtn.disabled = false;
-  }
-}
+      // Auto-select representative slices
+      autoSelectSlices();
 
-// Analyze button
-analyzeBtn.addEventListener('click', () => {
-  if (selectedSliceIndices.length === 0) return;
-  const customPrompt = chatInput.value.trim();
+      // Build gallery
+      buildSliceGallery();
+      sliceGalleryContainer.classList.add('visible');
+      analyzeBtn.disabled = false;
+    }
 
-  let prompt;
-  if (customPrompt) {
-    prompt = customPrompt;
-  } else if (loadedSlices.length > 1) {
-    prompt = `Analyze these ${selectedSliceIndices.length} medical image slices. ` +
-      (isDicomMode ? 'The images use 3-channel CT windowing (R=bone/lung, G=soft tissue, B=brain). ' : '') +
-      'Describe what you observe across the slices, identify any notable findings, and provide a differential assessment.';
-  } else {
-    prompt = 'Analyze this medical image. Describe what you observe, identify any notable findings, and provide a differential assessment.';
-  }
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
 
-  chatInput.value = '';
-  const images = selectedSliceIndices.map(i => loadedSlices[i].base64);
-  sendToOllama(prompt, images);
-});
+    // ── Slice gallery ──
+    function buildSliceGallery() {
+      sliceGallery.innerHTML = '';
+      loadedSlices.forEach((slice, i) => {
+        const img = document.createElement('img');
+        img.className = 'slice-thumb';
+        img.src = slice.dataUrl;
+        img.title = `${slice.fileName} (#${slice.instanceNumber})`;
+        if (i === currentPreviewIndex) img.classList.add('viewing');
+        if (selectedSliceIndices.includes(i)) img.classList.add('selected');
 
-// Send button / Enter
-sendBtn.addEventListener('click', () => {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  chatInput.value = '';
-  sendToOllama(text, null);
-});
+        img.addEventListener('click', (e) => {
+          if (e.shiftKey || e.metaKey || e.ctrlKey) {
+            // Toggle selection
+            toggleSliceSelection(i);
+          } else {
+            // View this slice
+            currentPreviewIndex = i;
+            previewImg.src = slice.dataUrl;
+            updateGalleryHighlights();
+          }
+        });
 
-chatInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
-});
+        img.addEventListener('dblclick', () => {
+          toggleSliceSelection(i);
+        });
 
-chatInput.addEventListener('input', () => {
-  chatInput.style.height = 'auto';
-  chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
-});
+        sliceGallery.appendChild(img);
+      });
+      updateSliceCountLabel();
+    }
 
-// PDF.js worker config
-if (typeof pdfjsLib !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
+    function toggleSliceSelection(index) {
+      const pos = selectedSliceIndices.indexOf(index);
+      if (pos >= 0) {
+        selectedSliceIndices.splice(pos, 1);
+      } else {
+        selectedSliceIndices.push(index);
+        selectedSliceIndices.sort((a, b) => a - b);
+      }
+      updateGalleryHighlights();
+      updateSliceCountLabel();
+      analyzeBtn.disabled = selectedSliceIndices.length === 0;
+    }
 
-// ════════════════════════════════════════
-//  THREAD UI HANDLERS + INIT
-// ════════════════════════════════════════
+    function autoSelectSlices() {
+      const count = loadedSlices.length;
+      if (count <= 8) {
+        selectedSliceIndices = loadedSlices.map((_, i) => i);
+      } else {
+        const n = Math.min(6, count);
+        selectedSliceIndices = [];
+        for (let i = 0; i < n; i++) {
+          selectedSliceIndices.push(Math.round((i / (n - 1)) * (count - 1)));
+        }
+      }
+      updateGalleryHighlights();
+      updateSliceCountLabel();
+      analyzeBtn.disabled = false;
+    }
 
-document.getElementById('newThreadBtn').addEventListener('click', async () => {
-  if (hasUnsavedContent() && !currentThreadId) {
-    await createThreadFromCurrentState();
-  }
-  currentThreadId = null;
-  clearAllImages();
-  conversationHistory = [];
-  chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
-  clinicalNotesText = '';
-  clinicalNotesSource = '';
-  notesInjected = false;
-  notesTextarea.value = '';
-  updateNotesCharCount();
-  notesIndicator.classList.remove('visible');
-  renderThreadList();
-  document.querySelector('[data-tab="images"]').click();
-});
+    function updateGalleryHighlights() {
+      sliceGallery.querySelectorAll('.slice-thumb').forEach((img, i) => {
+        img.classList.toggle('viewing', i === currentPreviewIndex);
+        img.classList.toggle('selected', selectedSliceIndices.includes(i));
+      });
+    }
 
-// Init threads on load
-(async () => {
-  await initImageDB();
-  loadThreadsFromStorage();
-  renderThreadList();
-})();
+    function updateSliceCountLabel() {
+      if (loadedSlices.length <= 1) {
+        sliceCountLabel.textContent = '';
+        return;
+      }
+      sliceCountLabel.textContent = t('sliceCountSelected', { selected: selectedSliceIndices.length, total: loadedSlices.length });
+    }
 
-// Electron status messages (if running inside Electron)
-if (window.electronAPI) {
-  window.electronAPI.onStatus((msg) => {
-    addMessage('system-msg', msg);
-  });
-}
-</script>
+    autoSelectBtn.addEventListener('click', () => { autoSelectSlices(); buildSliceGallery(); });
+    selectAllBtn.addEventListener('click', () => {
+      selectedSliceIndices = loadedSlices.map((_, i) => i);
+      updateGalleryHighlights();
+      updateSliceCountLabel();
+      analyzeBtn.disabled = false;
+    });
+
+    // ── Upload handlers ──
+    dropZone.addEventListener('click', () => {
+      if (!dropZone.classList.contains('has-image')) fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        const files = Array.from(fileInput.files);
+        clearAllImages();
+        loadMultipleFiles(files);
+      }
+    });
+
+    uploadFolderBtn.addEventListener('click', () => folderInput.click());
+    folderInput.addEventListener('change', () => {
+      if (folderInput.files.length > 0) {
+        const files = Array.from(folderInput.files);
+        clearAllImages();
+        loadMultipleFiles(files);
+      }
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) {
+        clearAllImages();
+        loadMultipleFiles(e.dataTransfer.files);
+      }
+    });
+
+    // Paste from clipboard
+    document.addEventListener('paste', (e) => {
+      // Don't intercept if typing in notes textarea
+      if (document.activeElement === notesTextarea) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          clearAllImages();
+          loadSingleImage(item.getAsFile());
+          return;
+        }
+      }
+    });
+
+    clearBtn.addEventListener('click', clearAllImages);
+
+    // ════════════════════════════════════════
+    //  CLINICAL NOTES
+    // ════════════════════════════════════════
+
+    function updateNotesCharCount() {
+      const len = notesTextarea.value.length;
+      notesCharCount.textContent = `${len.toLocaleString()} chars`;
+      notesCharCount.classList.toggle('warning', len > 4000);
+    }
+
+    notesTextarea.addEventListener('input', updateNotesCharCount);
+
+    // File upload
+    notesDropZone.addEventListener('click', () => notesFileInput.click());
+    notesDropZone.addEventListener('dragover', (e) => { e.preventDefault(); notesDropZone.classList.add('drag-over'); });
+    notesDropZone.addEventListener('dragleave', () => { notesDropZone.classList.remove('drag-over'); });
+    notesDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      notesDropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) loadNotesFile(e.dataTransfer.files[0]);
+    });
+    notesFileInput.addEventListener('change', () => {
+      if (notesFileInput.files[0]) loadNotesFile(notesFileInput.files[0]);
+    });
+
+    async function loadNotesFile(file) {
+      const name = file.name.toLowerCase();
+      try {
+        if (name.endsWith('.pdf')) {
+          if (typeof pdfjsLib === 'undefined') {
+            throw new Error('PDF.js library not loaded. Check your internet connection and reload.');
+          }
+          const buffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+          let text = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(' ') + '\n\n';
+          }
+          notesTextarea.value = text.trim();
+          clinicalNotesSource = `file: ${file.name}`;
+        } else {
+          // .txt or any text file
+          const text = await file.text();
+          notesTextarea.value = text;
+          clinicalNotesSource = `file: ${file.name}`;
+        }
+        updateNotesCharCount();
+      } catch (err) {
+        addMessage('system-msg', `Error reading file: ${err.message}`);
+      }
+    }
+
+    loadNotesBtn.addEventListener('click', () => {
+      const text = notesTextarea.value.trim();
+      if (!text) return;
+      clinicalNotesText = text;
+      notesInjected = false;
+      if (!clinicalNotesSource) clinicalNotesSource = 'pasted';
+      showNotesIndicator();
+      addMessage('system-msg', t('systemNotesLoaded', { count: text.length.toLocaleString() }));
+    });
+
+    function showNotesIndicator() {
+      notesIndicator.classList.add('visible');
+      const label = clinicalNotesSource.startsWith('file:')
+        ? clinicalNotesSource.replace('file: ', '')
+        : 'Pasted notes';
+      notesIndicatorText.textContent = `${label} (${clinicalNotesText.length.toLocaleString()} chars)`;
+    }
+
+    function clearNotes() {
+      clinicalNotesText = '';
+      clinicalNotesSource = '';
+      notesInjected = false;
+      notesTextarea.value = '';
+      notesFileInput.value = '';
+      notesIndicator.classList.remove('visible');
+      updateNotesCharCount();
+    }
+
+    clearNotesBtn.addEventListener('click', clearNotes);
+    clearNotesIndicatorBtn.addEventListener('click', clearNotes);
+
+    // ════════════════════════════════════════
+    //  CHAT
+    // ════════════════════════════════════════
+
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.textContent = text;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return div;
+    }
+
+    function createStreamingMessage() {
+      const div = document.createElement('div');
+      div.className = 'message assistant streaming';
+      div.textContent = '';
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return div;
+    }
+
+    function buildPromptWithContext(userText) {
+      if (clinicalNotesText && !notesInjected) {
+        notesInjected = true;
+        return `Clinical Notes Context:\n---\n${clinicalNotesText}\n---\n\n${userText}`;
+      }
+      return userText;
+    }
+
+    async function sendToOllama(userText, imageBase64Array) {
+      if (isStreaming) return;
+      isStreaming = true;
+      sendBtn.disabled = true;
+      analyzeBtn.disabled = true;
+
+      const model = modelNameInput.value.trim() || 'medgemma-vision';
+      const promptText = buildPromptWithContext(userText);
+
+      const userMsg = { role: 'user', content: promptText };
+      if (imageBase64Array && imageBase64Array.length > 0) {
+        userMsg.images = imageBase64Array;
+      }
+      conversationHistory.push(userMsg);
+
+      // Show the original text to user (not the full context-injected version)
+      addMessage('user', userText);
+
+      const streamDiv = createStreamingMessage();
+      let fullResponse = '';
+
+      try {
+        const res = await fetch(OLLAMA_BASE + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, messages: conversationHistory, stream: true })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Ollama returned ${res.status}: ${errText}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(l => l.trim());
+          for (const line of lines) {
+            try {
+              const json = JSON.parse(line);
+              if (json.message?.content) {
+                fullResponse += json.message.content;
+                streamDiv.textContent = fullResponse;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+              }
+            } catch (parseErr) { }
+          }
+        }
+
+        streamDiv.classList.remove('streaming');
+        conversationHistory.push({ role: 'assistant', content: fullResponse });
+        updateCurrentThread();
+
+      } catch (err) {
+        streamDiv.classList.remove('streaming');
+        streamDiv.textContent = 'Error: ' + err.message;
+        streamDiv.style.color = 'var(--red)';
+      } finally {
+        isStreaming = false;
+        sendBtn.disabled = false;
+        if (loadedSlices.length > 0 && selectedSliceIndices.length > 0) analyzeBtn.disabled = false;
+      }
+    }
+
+    // Analyze button
+    analyzeBtn.addEventListener('click', () => {
+      if (selectedSliceIndices.length === 0) return;
+      const customPrompt = chatInput.value.trim();
+
+      let prompt;
+      if (customPrompt) {
+        prompt = customPrompt;
+      } else if (loadedSlices.length > 1) {
+        const dicomContext = isDicomMode ? t('dicomContext') : '';
+        prompt = t('promptAnalyzeMulti', { count: selectedSliceIndices.length, dicom: dicomContext });
+      } else {
+        prompt = t('promptAnalyzeSingle');
+      }
+
+      chatInput.value = '';
+      const images = selectedSliceIndices.map(i => loadedSlices[i].base64);
+      sendToOllama(prompt, images);
+    });
+
+    // Send button / Enter
+    sendBtn.addEventListener('click', () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatInput.value = '';
+      sendToOllama(text, null);
+    });
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
+    });
+
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+    });
+
+    // PDF.js worker config
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // ════════════════════════════════════════
+    //  THREAD UI HANDLERS + INIT
+    // ════════════════════════════════════════
+
+    document.getElementById('newThreadBtn').addEventListener('click', async () => {
+      if (hasUnsavedContent() && !currentThreadId) {
+        await createThreadFromCurrentState();
+      }
+      currentThreadId = null;
+      clearAllImages();
+      conversationHistory = [];
+      chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
+      clinicalNotesText = '';
+      clinicalNotesSource = '';
+      notesInjected = false;
+      notesTextarea.value = '';
+      updateNotesCharCount();
+      notesIndicator.classList.remove('visible');
+      renderThreadList();
+      document.querySelector('[data-tab="images"]').click();
+    });
+
+    // Init threads on load
+    (async () => {
+      await initImageDB();
+      loadThreadsFromStorage();
+      setLanguage(currentLang); // Init language
+      renderThreadList();
+    })();
+  </script>
 
 </body>
+
 </html>
