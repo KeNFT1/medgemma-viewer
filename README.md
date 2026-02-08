@@ -32,78 +32,102 @@ A fully local medical image analysis application powered by [MedGemma 1.5](https
 - **Completely local** — Everything runs on your hardware via Ollama. No cloud APIs, no data uploads, no internet required after initial setup
 
 ---
+## Installation (Non-Technical Users)
 
-## How It Was Built
+This guide provides step-by-step instructions for installing and running the application on your personal computer.
 
-This project was built entirely through a conversational coding session with Claude (Anthropic's AI assistant) using Claude Code. The full development process — from initial concept to working desktop app — was done iteratively through natural language prompts.
+### Prerequisites
 
-### Architecture
+Before you begin, you need to install two pieces of free software: **Git** and **Node.js**.
 
-The app is a **single HTML file** (`index.html`) with inline CSS and JavaScript, plus two CDN dependencies:
+- **For Windows:**
+    1.  **Install Git:**
+        -   Download the Git installer from [git-scm.com/download/win](https://git-scm.com/download/win).
+        -   Run the installer. Use the default settings for all steps.
+    2.  **Install Node.js:**
+        -   Download the Node.js "LTS" (Long-Term Support) installer from [nodejs.org](https://nodejs.org/).
+        -   Run the installer. Use the default settings.
 
-- **[dicomParser.js](https://github.com/cornerstonejs/dicomParser)** — Parses DICOM files in the browser, extracting pixel data and metadata
-- **[PDF.js](https://mozilla.github.io/pdf.js/)** — Extracts text from PDF clinical notes for context injection
+- **For macOS:**
+    1.  **Install Git (via Homebrew):**
+        -   Open the **Terminal** app (you can find it in `Applications/Utilities`).
+        -   Install Homebrew by pasting this command and pressing Enter:
+            ```bash
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            ```
+        -   Once Homebrew is installed, install Git by running:
+            ```bash
+            brew install git
+            ```
+    2.  **Install Node.js (via Homebrew):**
+        -   In the same Terminal window, run:
+            ```bash
+            brew install node
+            ```
 
-The backend is **Ollama** running locally, serving the MedGemma 1.5 4B vision model. The app communicates with Ollama's REST API (`/api/chat`) with streaming enabled.
+### Step 1: Download the Application
 
-### Model
+1.  Open your terminal application:
+    -   **Windows:** Open the **Start Menu**, type `cmd`, and press Enter.
+    -   **macOS:** Open the **Terminal** app (from `Applications/Utilities`).
 
-The app uses **MedGemma 1.5 4B-IT** (instruction-tuned) from Google, quantized to Q8_0 via [Unsloth's GGUF conversion](https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF). This model is based on Gemma 3 with a SigLIP image encoder and was trained on medical imaging datasets covering:
+2.  Navigate to your Desktop (or any folder you prefer) by typing this command and pressing Enter:
+    ```bash
+    cd Desktop
+    ```
 
-- Chest X-rays
-- CT scans
-- MRI images
-- Dermatology photos
-- Histopathology slides
-- Ophthalmology images
+3.  Clone the project repository from GitHub. This command downloads the application's source code:
+    ```bash
+    git clone https://github.com/KeNFT1/medgemma-viewer.git
+    ```
 
-### DICOM Processing Pipeline
+4.  Navigate into the newly created `electron-app` directory:
+    ```bash
+    cd medgemma-viewer/electron-app
+    ```
 
-DICOM files are processed entirely in-browser:
+### Step 2: Build the Application
 
-1. Parse the `.dcm` file with `dicomParser.js`
-2. Extract pixel data and convert to Hounsfield Units using slope/intercept from DICOM metadata
-3. Apply 3-channel windowing optimized for MedGemma:
-   - **Red channel:** Bone/Lung window (W:2250, L:-100)
-   - **Green channel:** Soft tissue window (W:350, L:40)
-   - **Blue channel:** Brain window (W:80, L:40)
-4. Render to canvas and export as PNG base64 for the model
+This step compiles the source code into a runnable desktop app (`.exe` for Windows, `.app` for macOS).
 
-### Desktop App
+1.  In the same terminal window (inside the `electron-app` folder), install the necessary dependencies by running:
+    ```bash
+    npm install
+    ```
 
-The Electron wrapper (`electron-app/`) adds:
+2.  Now, build the application. This command may take a few minutes.
+    -   **For Windows:**
+        ```bash
+        npm run build:win
+        ```
+    -   **For macOS (Apple Silicon: M1, M2, M3):**
+        ```bash
+        npm run build:mac:arm64
+        ```
+    -   **For macOS (Intel-based):**
+        ```bash
+        npm run build:mac:x64
+        ```
 
-- Auto-detection of the Ollama binary across macOS, Windows, and Linux install paths
-- Automatic Ollama server startup with `OLLAMA_ORIGINS=*` for CORS
-- One-click model download on first launch (~5 GB)
-- Cross-platform builds (macOS `.app`, Windows `.exe`, Linux `AppImage`)
+### Step 3: Launch the Application
 
----
+1.  The finished application is now located in the `electron-app/dist` folder. You can find it using your file explorer.
+2.  Double-click the application to run it:
+    -   **Windows:** `Lulos NOT a Health Copilot.exe`
+    -   **macOS:** `Lulos NOT a Health Copilot.app`
 
-## Capabilities
+3.  On the first launch, the app will automatically download the necessary AI model (~5 GB). This is a one-time process and may take a while depending on your internet connection.
 
-| Feature | Details |
-|---|---|
-| **Image formats** | JPEG, PNG, BMP, WebP, TIFF, GIF, SVG |
-| **Medical formats** | DICOM (`.dcm`), uncompressed transfer syntaxes |
-| **Upload methods** | Click to browse, drag & drop, clipboard paste (Ctrl/Cmd+V) |
-| **DICOM series** | Folder upload, multi-file select, slice gallery with thumbnail navigation |
-| **Slice selection** | Manual pick (click/shift-click), auto-select (evenly-spaced), select all |
-| **Clinical notes** | PDF upload (text extraction), plain text upload, paste directly |
-| **Chat** | Streaming responses, conversation history, follow-up questions |
-| **Windowing** | Automatic 3-channel CT windowing for MedGemma (bone, tissue, brain) |
-| **Platforms** | Browser (any OS), macOS `.app`, Windows `.exe`, Linux `AppImage` |
-| **Privacy** | 100% local — no data leaves your machine |
+You are now ready to use the application!
 
----
-
-## Getting Started
+## Developer Quickstart
 
 ### Prerequisites
 
 - **[Ollama](https://ollama.com/download)** installed and available in your PATH
 - ~5 GB disk space for the MedGemma model
 - A machine with at least 8 GB RAM (16 GB recommended)
+- **Node.js** and **npm**
 
 ### Option 1: Browser (Quickest)
 
@@ -116,7 +140,6 @@ cd medgemma-viewer
 chmod +x launch.sh
 ./launch.sh
 ```
-
 The launcher will:
 1. Start Ollama with CORS enabled
 2. Pull the MedGemma model if not already installed
@@ -132,21 +155,18 @@ npm start        # Run in development mode
 ```
 
 To build a standalone `.app` / `.exe`:
+-   **Windows:** `npm run build:win`
+-   **macOS (ARM64):** `npm run build:mac:arm64`
+-   **macOS (x64):** `npm run build:mac:x64`
+-   **Linux:** `npm run build:linux`
 
-```bash
-npm run build:mac    # macOS
-npm run build:win    # Windows
-npm run build:linux  # Linux
-```
-
-The built app is in `electron-app/dist/`. On first launch, it will prompt to download the MedGemma model if not already installed.
+The built app is in `electron-app/dist/`.
 
 ### Manual Model Setup
 
 If you prefer to set up the model yourself:
-
 ```bash
-# Pull the model from HuggingFace (includes vision projector)
+# Pull the model from HuggingFace
 ollama pull hf.co/unsloth/medgemma-1.5-4b-it-GGUF:Q8_0
 
 # Create a shorter alias
@@ -155,6 +175,27 @@ ollama cp hf.co/unsloth/medgemma-1.5-4b-it-GGUF:Q8_0 medgemma-vision
 
 ---
 
+## How It Was Built
+
+This project was built entirely through a conversational coding session with Claude (Anthropic's AI assistant) using Claude Code. The full development process — from initial concept to working desktop app — was done iteratively through natural language prompts.
+
+### Architecture
+
+The app is a **single HTML file** (`index.html`) with inline CSS and JavaScript, plus two CDN dependencies:
+- **[dicomParser.js](https://github.com/cornerstonejs/dicomParser)** — Parses DICOM files in the browser.
+- **[PDF.js](https://mozilla.github.io/pdf.js/)** — Extracts text from PDF clinical notes.
+
+The backend is **Ollama** running locally, serving the MedGemma 1.5 4B vision model.
+
+### Desktop App
+
+The Electron wrapper (`electron-app/`) adds:
+- Auto-detection and bundling of the Ollama binary for the target platform.
+- Automatic Ollama server startup.
+- One-click model download on first launch (~5 GB).
+- Cross-platform builds (macOS, Windows, Linux).
+
+---
 ## Project Structure
 
 ```
@@ -171,220 +212,181 @@ medgemma-viewer/
 ```
 
 ---
-
-## Usage Tips
-
-- **Single image analysis:** Upload any medical image (X-ray, photo, screenshot) and click **Analyze** or type a custom question
-- **CT/MRI series:** Click **+ Folder** to upload a DICOM directory, or drag multiple `.dcm` files onto the drop zone. Use the slice gallery to select which slices to include in your query
-- **Clinical context:** Switch to the **Notes** tab, upload a PDF or paste clinical notes, then click **Load into Chat**. The notes will be included as context in your next message
-- **Custom prompts:** Type your own question in the chat box instead of using the default analyze prompt — useful for asking about specific findings or regions
-- **Model switching:** Change the model name in the chat header if you want to use a different Ollama model
-
----
-
-## Tech Stack
-
-- **Frontend:** Vanilla HTML/CSS/JS (no framework, single file)
-- **DICOM parsing:** [dicomParser.js](https://github.com/cornerstonejs/dicomParser) v1.8.21
-- **PDF extraction:** [PDF.js](https://mozilla.github.io/pdf.js/) v3.11.174
-- **AI model:** [MedGemma 1.5 4B-IT Q8_0](https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF) via Ollama
-- **Desktop:** [Electron](https://www.electronjs.org/) v35 + [electron-builder](https://www.electron.build/)
-- **LLM server:** [Ollama](https://ollama.com/)
-
----
-
-## License
-
-MIT
-
----
-
 <details>
-<summary><strong>Leer en Espa&ntilde;ol</strong></summary>
+<summary><strong>Leer en Español</strong></summary>
 
 # Lulo's NOT a Health Copilot
 
-Una aplicaci&oacute;n completamente local para an&aacute;lisis de im&aacute;genes m&eacute;dicas, impulsada por [MedGemma 1.5](https://huggingface.co/google/medgemma-4b-it) y [Ollama](https://ollama.com). Sube radiograf&iacute;as, tomograf&iacute;as (CT), resonancias magn&eacute;ticas (MRI) o fotos cl&iacute;nicas y obt&eacute;n an&aacute;lisis con inteligencia artificial a trav&eacute;s de una interfaz de chat conversacional &mdash; todo ejecut&aacute;ndose en tu m&aacute;quina sin que ning&uacute;n dato salga de tu computadora.
+<p align="center">
+  <img src="logo.png" alt="Lulo's NOT a Health Copilot" width="200">
+</p>
 
-> **ADVERTENCIA &mdash; NO ES UN DISPOSITIVO M&Eacute;DICO**
->
-> Este software **NO** es un dispositivo m&eacute;dico, **NO** cuenta con aprobaci&oacute;n de la FDA ni de ning&uacute;n organismo regulador, y **NO** est&aacute; destinado a diagnosticar, tratar, curar o prevenir ninguna enfermedad o condici&oacute;n m&eacute;dica. No ha sido validado para uso cl&iacute;nico y **NUNCA** debe usarse como sustituto del criterio m&eacute;dico profesional.
->
-> **No tomes** ninguna decisi&oacute;n m&eacute;dica basada en los resultados de este software. El modelo de IA puede producir resultados inexactos, incompletos, enga&ntilde;osos o completamente fabricados. Todos los resultados son &uacute;nicamente para **fines de investigaci&oacute;n y educaci&oacute;n**.
->
-> **Siempre consulta a un profesional de salud calificado** para cualquier pregunta, inquietud o decisi&oacute;n m&eacute;dica relacionada con diagn&oacute;stico, tratamiento o atenci&oacute;n. Si est&aacute;s experimentando una emergencia m&eacute;dica, llama a tu n&uacute;mero de emergencias local inmediatamente.
->
-> Los desarrolladores, colaboradores y mantenedores de este proyecto **no aceptan ninguna responsabilidad** por cualquier da&ntilde;o, lesi&oacute;n, p&eacute;rdida o perjuicio &mdash; directo o indirecto &mdash; derivado del uso o mal uso de este software o sus resultados. Al usar este software, reconoces y aceptas que lo haces **completamente bajo tu propio riesgo**.
+<p align="center"><em>No aceptes consejos médicos de un mono.</em></p>
+
+Una aplicación de análisis de imágenes médicas completamente local, impulsada por [MedGemma 1.5](https://huggingface.co/google/medgemma-4b-it) y [Ollama](https://ollama.com). Sube radiografías, tomografías (CT), resonancias magnéticas (MRI) o fotos clínicas y obtén análisis con inteligencia artificial a través de una interfaz de chat conversacional — todo ejecutándose en tu máquina sin que ningún dato salga de tu computadora.
 
 ---
 
-## Qu&eacute; Hace
-
-- **Analizar im&aacute;genes m&eacute;dicas** &mdash; Sube una radiograf&iacute;a, corte de CT, MRI, foto dermatol&oacute;gica o cualquier imagen m&eacute;dica y obt&eacute;n un an&aacute;lisis estructurado con hallazgos, observaciones y evaluaciones diferenciales
-- **Soporte DICOM** &mdash; Carga archivos `.dcm` o carpetas DICOM completas. La app aplica ventaneo de 3 canales optimizado para MedGemma (hueso/pulm&oacute;n, tejido blando, cerebro) para convertir unidades Hounsfield en im&aacute;genes RGB optimizadas para el modelo
-- **Series multi-corte** &mdash; Sube una serie completa de CT o MRI y navega los cortes en una galer&iacute;a de miniaturas. Selecci&oacute;n autom&aacute;tica de cortes representativos o elecci&oacute;n manual de cu&aacute;les enviar para an&aacute;lisis
-- **Contexto de notas cl&iacute;nicas** &mdash; Sube res&uacute;menes de consulta, resultados de laboratorio o notas cl&iacute;nicas (PDF o texto) para dar al modelo contexto adicional al responder preguntas
-- **Chat conversacional** &mdash; Haz preguntas de seguimiento sobre la imagen, solicita enfoque en regiones espec&iacute;ficas o discute hallazgos en una interfaz de chat con respuestas en tiempo real e historial completo de conversaci&oacute;n
-- **Completamente local** &mdash; Todo se ejecuta en tu hardware a trav&eacute;s de Ollama. Sin APIs en la nube, sin subida de datos, sin necesidad de internet despu&eacute;s de la configuraci&oacute;n inicial
-
----
-
-## C&oacute;mo Se Construy&oacute;
-
-Este proyecto fue construido completamente a trav&eacute;s de una sesi&oacute;n de programaci&oacute;n conversacional con Claude (el asistente de IA de Anthropic) usando Claude Code. Todo el proceso de desarrollo &mdash; desde el concepto inicial hasta la aplicaci&oacute;n de escritorio funcional &mdash; se realiz&oacute; iterativamente mediante instrucciones en lenguaje natural.
-
-### Arquitectura
-
-La app es un **&uacute;nico archivo HTML** (`index.html`) con CSS y JavaScript en l&iacute;nea, m&aacute;s dos dependencias por CDN:
-
-- **[dicomParser.js](https://github.com/cornerstonejs/dicomParser)** &mdash; Analiza archivos DICOM en el navegador, extrayendo datos de p&iacute;xeles y metadatos
-- **[PDF.js](https://mozilla.github.io/pdf.js/)** &mdash; Extrae texto de notas cl&iacute;nicas en PDF para inyecci&oacute;n de contexto
-
-El backend es **Ollama** ejecut&aacute;ndose localmente, sirviendo el modelo de visi&oacute;n MedGemma 1.5 4B. La app se comunica con la API REST de Ollama (`/api/chat`) con streaming habilitado.
-
-### Modelo
-
-La app utiliza **MedGemma 1.5 4B-IT** (ajustado por instrucciones) de Google, cuantizado a Q8_0 mediante la [conversi&oacute;n GGUF de Unsloth](https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF). Este modelo est&aacute; basado en Gemma 3 con un codificador de im&aacute;genes SigLIP y fue entrenado en conjuntos de datos de im&aacute;genes m&eacute;dicas que incluyen:
-
-- Radiograf&iacute;as de t&oacute;rax
-- Tomograf&iacute;as computarizadas (CT)
-- Im&aacute;genes de resonancia magn&eacute;tica (MRI)
-- Fotos dermatol&oacute;gicas
-- Laminillas de histopatolog&iacute;a
-- Im&aacute;genes de oftalmolog&iacute;a
-
-### Pipeline de Procesamiento DICOM
-
-Los archivos DICOM se procesan completamente en el navegador:
-
-1. Analizar el archivo `.dcm` con `dicomParser.js`
-2. Extraer datos de p&iacute;xeles y convertir a Unidades Hounsfield usando pendiente/intercepto de los metadatos DICOM
-3. Aplicar ventaneo de 3 canales optimizado para MedGemma:
-   - **Canal rojo:** Ventana de hueso/pulm&oacute;n (W:2250, L:-100)
-   - **Canal verde:** Ventana de tejido blando (W:350, L:40)
-   - **Canal azul:** Ventana de cerebro (W:80, L:40)
-4. Renderizar en canvas y exportar como PNG base64 para el modelo
-
-### Aplicaci&oacute;n de Escritorio
-
-El contenedor Electron (`electron-app/`) a&ntilde;ade:
-
-- Detecci&oacute;n autom&aacute;tica del binario de Ollama en rutas de instalaci&oacute;n de macOS, Windows y Linux
-- Inicio autom&aacute;tico del servidor Ollama con `OLLAMA_ORIGINS=*` para CORS
-- Descarga del modelo con un clic en el primer inicio (~5 GB)
-- Compilaciones multiplataforma (macOS `.app`, Windows `.exe`, Linux `AppImage`)
+> **ADVERTENCIA — NO ES UN DISPOSITIVO MÉDICO**
+>
+> Este software **NO** es un dispositivo médico, **NO** cuenta con aprobación de la FDA ni de ningún organismo regulador, y **NO** está destinado a diagnosticar, tratar, curar o prevenir ninguna enfermedad o condición médica. No ha sido validado para uso clínico y **NUNCA** debe usarse como sustituto del criterio médico profesional.
+>
+> **No tomes** ninguna decisión médica basada en los resultados de este software. El modelo de IA puede producir resultados inexactos, incompletos, engañosos o completamente fabricados. Todos los resultados son únicamente para **fines de investigación y educación**.
+>
+> **Siempre consulta a un profesional de salud calificado** para cualquier pregunta, inquietud o decisión médica relacionada con diagnóstico, tratamiento o atención. Si estás experimentando una emergencia médica, llama a tu número de emergencias local inmediatamente.
+>
+> Los desarrolladores, colaboradores y mantenedores de este proyecto **no aceptan ninguna responsabilidad** por cualquier daño, lesión, pérdida o perjuicio — directo o indirecto — derivado del uso o mal uso de este software o sus resultados. Al usar este software, reconoces y aceptas que lo haces **completamente bajo tu propio riesgo**.
 
 ---
 
-## Capacidades
+## Qué Hace
 
-| Caracter&iacute;stica | Detalles |
-|---|---|
-| **Formatos de imagen** | JPEG, PNG, BMP, WebP, TIFF, GIF, SVG |
-| **Formatos m&eacute;dicos** | DICOM (`.dcm`), sintaxis de transferencia sin compresi&oacute;n |
-| **M&eacute;todos de carga** | Clic para buscar, arrastrar y soltar, pegar desde portapapeles (Ctrl/Cmd+V) |
-| **Series DICOM** | Carga de carpetas, selecci&oacute;n m&uacute;ltiple de archivos, galer&iacute;a de cortes con navegaci&oacute;n por miniaturas |
-| **Selecci&oacute;n de cortes** | Selecci&oacute;n manual (clic/shift-clic), auto-selecci&oacute;n (espaciado uniforme), seleccionar todos |
-| **Notas cl&iacute;nicas** | Carga de PDF (extracci&oacute;n de texto), carga de texto plano, pegar directamente |
-| **Chat** | Respuestas en streaming, historial de conversaci&oacute;n, preguntas de seguimiento |
-| **Ventaneo** | Ventaneo autom&aacute;tico de 3 canales CT para MedGemma (hueso, tejido, cerebro) |
-| **Plataformas** | Navegador (cualquier SO), macOS `.app`, Windows `.exe`, Linux `AppImage` |
-| **Privacidad** | 100% local &mdash; ning&uacute;n dato sale de tu m&aacute;quina |
+- **Analizar imágenes médicas** — Sube una radiografía, corte de CT, MRI, foto dermatológica o cualquier imagen médica y obtén un análisis estructurado con hallazgos y observaciones.
+- **Soporte DICOM** — Carga archivos `.dcm` o carpetas DICOM completas.
+- **Series multi-corte** — Sube una serie completa de CT o MRI y navega los cortes en una galería de miniaturas.
+- **Contexto de notas clínicas** — Sube resúmenes de consulta o notas clínicas (PDF o texto) para dar contexto al modelo.
+- **Chat conversacional** — Haz preguntas de seguimiento sobre la imagen en una interfaz de chat con historial completo.
+- **Completamente local** — Todo se ejecuta en tu hardware. No se envían datos a la nube.
 
 ---
+## Instalación (Usuarios No Técnicos)
 
-## C&oacute;mo Empezar
+Esta guía proporciona instrucciones paso a paso para instalar y ejecutar la aplicación en tu computadora personal.
 
 ### Requisitos Previos
 
-- **[Ollama](https://ollama.com/download)** instalado y disponible en tu PATH
-- ~5 GB de espacio en disco para el modelo MedGemma
-- Una m&aacute;quina con al menos 8 GB de RAM (16 GB recomendado)
+Antes de comenzar, necesitas instalar dos programas gratuitos: **Git** y **Node.js**.
 
-### Opci&oacute;n 1: Navegador (M&aacute;s R&aacute;pido)
+- **Para Windows:**
+    1.  **Instalar Git:**
+        -   Descarga el instalador de Git desde [git-scm.com/download/win](https://git-scm.com/download/win).
+        -   Ejecuta el instalador. Usa la configuración predeterminada en todos los pasos.
+    2.  **Instalar Node.js:**
+        -   Descarga el instalador de Node.js "LTS" (Soporte a Largo Plazo) desde [nodejs.org](https://nodejs.org/).
+        -   Ejecuta el instalador. Usa la configuración predeterminada.
+
+- **Para macOS:**
+    1.  **Instalar Git (vía Homebrew):**
+        -   Abre la aplicación **Terminal** (la encuentras en `Aplicaciones/Utilidades`).
+        -   Instala Homebrew pegando este comando y presionando Enter:
+            ```bash
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            ```
+        -   Una vez instalado Homebrew, instala Git ejecutando:
+            ```bash
+            brew install git
+            ```
+    2.  **Instalar Node.js (vía Homebrew):**
+        -   En la misma ventana de Terminal, ejecuta:
+            ```bash
+            brew install node
+            ```
+
+### Paso 1: Descargar la Aplicación
+
+1.  Abre tu aplicación de terminal:
+    -   **Windows:** Abre el **Menú Inicio**, escribe `cmd`, y presiona Enter.
+    -   **macOS:** Abre la aplicación **Terminal** (desde `Aplicaciones/Utilidades`).
+
+2.  Navega a tu Escritorio (o cualquier carpeta que prefieras) escribiendo este comando y presionando Enter:
+    ```bash
+    cd Desktop
+    ```
+
+3.  Clona el repositorio del proyecto desde GitHub. Este comando descarga el código fuente de la aplicación:
+    ```bash
+    git clone https://github.com/KeNFT1/medgemma-viewer.git
+    ```
+
+4.  Navega al nuevo directorio `electron-app`:
+    ```bash
+    cd medgemma-viewer/electron-app
+    ```
+
+### Paso 2: Compilar la Aplicación
+
+Este paso compila el código fuente en una aplicación de escritorio ejecutable (`.exe` para Windows, `.app` para macOS).
+
+1.  En la misma ventana de terminal (dentro de la carpeta `electron-app`), instala las dependencias necesarias ejecutando:
+    ```bash
+    npm install
+    ```
+
+2.  Ahora, compila la aplicación. Este comando puede tardar unos minutos.
+    -   **Para Windows:**
+        ```bash
+        npm run build:win
+        ```
+    -   **Para macOS (Apple Silicon: M1, M2, M3):**
+        ```bash
+        npm run build:mac:arm64
+        ```
+    -   **Para macOS (basado en Intel):**
+        ```bash
+        npm run build:mac:x64
+        ```
+
+### Paso 3: Iniciar la Aplicación
+
+1.  La aplicación final se encuentra ahora en la carpeta `electron-app/dist`. Puedes encontrarla usando tu explorador de archivos.
+2.  Haz doble clic en la aplicación para ejecutarla:
+    -   **Windows:** `Lulos NOT a Health Copilot.exe`
+    -   **macOS:** `Lulos NOT a Health Copilot.app`
+
+3.  En el primer inicio, la aplicación descargará automáticamente el modelo de IA necesario (~5 GB). Este es un proceso único y puede tardar un poco dependiendo de tu conexión a internet.
+
+¡Ya estás listo para usar la aplicación!
+
+## Guía Rápida para Desarrolladores
+
+### Requisitos Previos
+
+- **[Ollama](https://ollama.com/download)** instalado y disponible en tu PATH.
+- ~5 GB de espacio en disco para el modelo MedGemma.
+- Una máquina con al menos 8 GB de RAM (16 GB recomendado).
+- **Node.js** y **npm**.
+
+### Opción 1: Navegador (Más Rápido)
 
 ```bash
-# Clonar el repositorio
+# Clona el repositorio
 git clone https://github.com/KeNFT1/medgemma-viewer.git
 cd medgemma-viewer
 
-# Ejecutar el lanzador (maneja Ollama, descarga del modelo y servidor web)
+# Ejecuta el lanzador
 chmod +x launch.sh
 ./launch.sh
 ```
+El lanzador iniciará Ollama, descargará el modelo y abrirá la aplicación en tu navegador.
 
-El lanzador:
-1. Inicia Ollama con CORS habilitado
-2. Descarga el modelo MedGemma si no est&aacute; instalado
-3. Inicia un servidor web local en el puerto 8090
-4. Abre tu navegador en `http://localhost:8090`
-
-### Opci&oacute;n 2: Aplicaci&oacute;n de Escritorio Electron
+### Opción 2: Aplicación de Escritorio Electron
 
 ```bash
 cd electron-app
 npm install
-npm start        # Ejecutar en modo desarrollo
+npm start        # Ejecutar en modo de desarrollo
 ```
 
 Para compilar un `.app` / `.exe` independiente:
+-   **Windows:** `npm run build:win`
+-   **macOS (ARM64):** `npm run build:mac:arm64`
+-   **macOS (x64):** `npm run build:mac:x64`
+-   **Linux:** `npm run build:linux`
 
-```bash
-npm run build:mac    # macOS
-npm run build:win    # Windows
-npm run build:linux  # Linux
-```
-
-La aplicaci&oacute;n compilada est&aacute; en `electron-app/dist/`. En el primer inicio, pedir&aacute; descargar el modelo MedGemma si no est&aacute; instalado.
-
-### Configuraci&oacute;n Manual del Modelo
-
-Si prefieres configurar el modelo manualmente:
-
-```bash
-# Descargar el modelo desde HuggingFace (incluye proyector de visi&oacute;n)
-ollama pull hf.co/unsloth/medgemma-1.5-4b-it-GGUF:Q8_0
-
-# Crear un alias m&aacute;s corto
-ollama cp hf.co/unsloth/medgemma-1.5-4b-it-GGUF:Q8_0 medgemma-vision
-```
+La aplicación compilada estará en `electron-app/dist/`.
 
 ---
-
 ## Estructura del Proyecto
-
 ```
 medgemma-viewer/
-├── index.html           # Webapp principal (archivo &uacute;nico, funciona en cualquier navegador)
-├── launch.sh            # Lanzador de shell (inicia Ollama + servidor web)
+├── index.html           # Webapp principal (archivo único)
+├── launch.sh            # Lanzador de shell
 ├── model/
-│   └── Modelfile        # Configuraci&oacute;n del modelo Ollama (referencia)
+│   └── Modelfile        # Configuración del modelo Ollama
 └── electron-app/
-    ├── main.js          # Proceso principal de Electron (gesti&oacute;n de Ollama)
-    ├── preload.js       # Puente IPC de Electron
-    ├── index.html       # Versi&oacute;n Electron de la webapp
-    └── package.json     # Dependencias y configuraci&oacute;n de compilaci&oacute;n
+    ├── main.js          # Proceso principal de Electron
+    ├── ...
+    └── package.json     # Dependencias y configuración
 ```
-
----
-
-## Consejos de Uso
-
-- **An&aacute;lisis de imagen individual:** Sube cualquier imagen m&eacute;dica (radiograf&iacute;a, foto, captura de pantalla) y haz clic en **Analyze** o escribe una pregunta personalizada
-- **Series CT/MRI:** Haz clic en **+ Folder** para subir un directorio DICOM, o arrastra m&uacute;ltiples archivos `.dcm` a la zona de carga. Usa la galer&iacute;a de cortes para seleccionar cu&aacute;les incluir en tu consulta
-- **Contexto cl&iacute;nico:** Cambia a la pesta&ntilde;a **Notes**, sube un PDF o pega notas cl&iacute;nicas, luego haz clic en **Load into Chat**. Las notas se incluir&aacute;n como contexto en tu pr&oacute;ximo mensaje
-- **Preguntas personalizadas:** Escribe tu propia pregunta en el cuadro de chat en lugar de usar el prompt de an&aacute;lisis predeterminado &mdash; &uacute;til para preguntar sobre hallazgos o regiones espec&iacute;ficas
-- **Cambio de modelo:** Cambia el nombre del modelo en el encabezado del chat si deseas usar un modelo de Ollama diferente
-
----
-
-## Stack Tecnol&oacute;gico
-
-- **Frontend:** HTML/CSS/JS vanilla (sin framework, archivo &uacute;nico)
-- **An&aacute;lisis DICOM:** [dicomParser.js](https://github.com/cornerstonejs/dicomParser) v1.8.21
-- **Extracci&oacute;n de PDF:** [PDF.js](https://mozilla.github.io/pdf.js/) v3.11.174
-- **Modelo de IA:** [MedGemma 1.5 4B-IT Q8_0](https://huggingface.co/unsloth/medgemma-1.5-4b-it-GGUF) v&iacute;a Ollama
-- **Escritorio:** [Electron](https://www.electronjs.org/) v35 + [electron-builder](https://www.electron.build/)
-- **Servidor LLM:** [Ollama](https://ollama.com/)
 
 </details>

@@ -12,6 +12,15 @@ let ollamaBin = null;
 
 function findOllama() {
   const isWin = process.platform === 'win32';
+  const bundledName = isWin ? 'ollama.exe' : 'ollama';
+  const bundledPath = path.join(process.resourcesPath, 'binaries', bundledName);
+
+  if (fs.existsSync(bundledPath)) {
+    if (!isWin) {
+      fs.chmodSync(bundledPath, '755');
+    }
+    return bundledPath;
+  }
   const home = process.env.HOME || process.env.USERPROFILE || '';
 
   let candidates;
@@ -195,7 +204,7 @@ async function createWindow() {
   if (!isOllamaInstalled()) {
     dialog.showErrorBox(
       'Ollama Not Found',
-      'Ollama is required but not installed.\n\nDownload it from: https://ollama.com/download\n\nThe app will now quit.'
+      'Ollama is required but could not be found or downloaded.\n\nCheck your internet connection or download it manually from: https://ollama.com/download\n\nThe app will now quit.'
     );
     app.quit();
     return;
