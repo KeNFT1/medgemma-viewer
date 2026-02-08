@@ -620,6 +620,15 @@
       background: var(--accent-hover);
     }
 
+    .btn.stop {
+      background: var(--red);
+      color: white;
+    }
+
+    .btn.stop:hover {
+      background: #c0392b;
+    }
+
     .btn.primary:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -1018,12 +1027,6 @@
         <div class="message system-msg" data-i18n="chatWelcome">Upload a medical image and click Analyze, or load
           clinical notes to ask questions.</div>
       </div>
-      <div class="chat-input-container">
-        <textarea id="chatInput" placeholder="Ask about the image or clinical notes..." rows="1"
-          data-i18n-placeholder="chatPlaceholder"></textarea>
-        <button class="btn cancel" id="cancelBtn" title="Stop generating">Stop</button>
-        <button class="btn primary" id="sendBtn">&#10148;</button>
-      </div>
       <div class="disclaimer" data-i18n="disclaimer">
         Don't take medical advice from a monkey. For research and educational use only.
       </div>
@@ -1177,8 +1180,6 @@
     const clearBtn = document.getElementById('clearBtn');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendBtn');
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
     const modelNameInput = document.getElementById('modelName');
@@ -2157,15 +2158,6 @@
     // ════════════════════════════════════════
 
     let abortController = null;
-    const cancelBtn = document.getElementById('cancelBtn');
-
-    cancelBtn.addEventListener('click', () => {
-      if (abortController) {
-        abortController.abort();
-        abortController = null;
-        // UI reset handled in finally block or error handler of sendToOllama
-      }
-    });
 
     function addMessage(role, text) {
       const div = document.createElement('div');
@@ -2196,9 +2188,11 @@
     async function sendToOllama(userText, imageBase64Array) {
       if (isStreaming) return;
       isStreaming = true;
-      sendBtn.disabled = true;
-      analyzeBtn.disabled = true;
-      cancelBtn.classList.add('visible');
+
+      // Update Analyze button to Stop button
+      analyzeBtn.textContent = 'Stop';
+      analyzeBtn.classList.add('stop');
+      analyzeBtn.disabled = false; // Enable so it can be clicked to stop
 
       // Show loading bar (indeterminate)
       loadingBar.classList.add('visible');
@@ -2269,51 +2263,49 @@
         }
       } finally {
         isStreaming = false;
-        sendBtn.disabled = false;
-        cancelBtn.classList.remove('visible');
+
+        // Revert Analyze button
+        analyzeBtn.textContent = t('btnAnalyze');
+        analyzeBtn.classList.remove('stop');
+
         loadingBar.classList.remove('visible');
         loadingBar.classList.remove('indeterminate');
         abortController = null;
+
         if (loadedSlices.length > 0 && selectedSliceIndices.length > 0) analyzeBtn.disabled = false;
       }
     }
 
     // Analyze button
     analyzeBtn.addEventListener('click', () => {
+      // If streaming, this button acts as Stop
+      if (isStreaming) {
+        if (abortController) {
+          abortController.abort();
+          abortController = null;
+        }
+        return;
+      }
+
       if (selectedSliceIndices.length === 0) return;
-      const customPrompt = chatInput.value.trim();
+      // const customPrompt = chatInput.value.trim(); // Removed
 
       let prompt;
-      if (customPrompt) {
-        prompt = customPrompt;
-      } else if (loadedSlices.length > 1) {
+      // if (customPrompt) {
+      //   prompt = customPrompt;
+      // } else if (loadedSlices.length > 1) {
+      if (loadedSlices.length > 1) {
         const dicomContext = isDicomMode ? t('dicomContext') : '';
         prompt = t('promptAnalyzeMulti', { count: selectedSliceIndices.length, dicom: dicomContext });
       } else {
         prompt = t('promptAnalyzeSingle');
       }
 
-      chatInput.value = '';
+      // chatInput.value = '';
       const images = selectedSliceIndices.map(i => loadedSlices[i].base64);
       sendToOllama(prompt, images);
     });
 
-    // Send button / Enter
-    sendBtn.addEventListener('click', () => {
-      const text = chatInput.value.trim();
-      if (!text) return;
-      chatInput.value = '';
-      sendToOllama(text, null);
-    });
-
-    chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
-    });
-
-    chatInput.addEventListener('input', () => {
-      chatInput.style.height = 'auto';
-      chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
-    });
 
     // PDF.js worker config
     if (typeof pdfjsLib !== 'undefined') {
