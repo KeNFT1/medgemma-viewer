@@ -250,3 +250,5 @@ app.on('before-quit', () => {
     ollamaProcess.kill();
   }
 });
+
+module.exports = { createWindow };
