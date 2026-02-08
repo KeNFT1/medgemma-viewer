@@ -1679,11 +1679,11 @@
       }
       ctx.putImageData(imageData, 0, 0);
 
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
       // Resize if too large
-      if (width > 1024 || height > 1024) {
-        return resizeImage(dataUrl, 1024).then(resizedDataUrl => {
+      if (cols > 768 || rows > 768) {
+        return resizeImage(dataUrl, 768).then(resizedDataUrl => {
           return {
             base64: resizedDataUrl.split(',')[1],
             dataUrl: resizedDataUrl,
@@ -1867,7 +1867,7 @@
         const reader = new FileReader();
         reader.onload = e => {
           const originalDataUrl = e.target.result;
-          resizeImage(originalDataUrl, 1024).then(resolve).catch(resolve); // Fallback to original on error
+          resizeImage(originalDataUrl, 768).then(resolve).catch(resolve); // Fallback to original on error
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
