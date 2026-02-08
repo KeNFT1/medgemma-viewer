@@ -1172,6 +1172,18 @@
     // Call this after DOMContentLoaded or simply at the end of script,
     // but since we are at top of script, we'll rely on the init block at the end
 
+    // ── Electron Integration ──
+    if (window.electronAPI) {
+      window.electronAPI.onStatus((message) => {
+        console.log('Electron status:', message);
+        statusText.textContent = message;
+        // Also show important messages in chat
+        if (message.includes('Downloading') || message.includes('Pulling') || message.includes('Error')) {
+          addMessage('system-msg', message);
+        }
+      });
+    }
+
     // ── DOM refs ──
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');

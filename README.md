@@ -34,95 +34,30 @@ A fully local medical image analysis application powered by [MedGemma 1.5](https
 - **Completely local** — Everything runs on your hardware via Ollama. No cloud APIs, no data uploads, no internet required after initial setup
 
 ---
-## Installation (Non-Technical Users)
+## Installation (For Users)
 
-This guide provides step-by-step instructions for installing and running the application on your personal computer.
+**The easy way.** No coding required.
 
-### Prerequisites
+1.  **Download the App**
+    Go to the [Releases page](https://github.com/KeNFT1/medgemma-viewer/releases) and download the latest installer for your system:
+    -   **macOS:** `Lulos-Health-Copilot-mac-arm64.dmg` (for M1/M2/M3 chips)
+    -   **Windows:** `Lulos-Health-Copilot-Setup.exe`
 
-Before you begin, you need to install two pieces of free software: **Git** and **Node.js**.
+2.  **Install & Run**
+    -   **macOS:** Open the `.dmg` and drag the app to your Applications folder.
+        -   *Note:* If you see "App is damaged" or "Unidentified Developer", you may need to right-click the app and select **Open**, or go to System Settings > Privacy & Security to allow it.
+    -   **Windows:** Run the `.exe` installer.
 
-- **For Windows:**
-    1.  **Install Git:**
-        -   Download the Git installer from [git-scm.com/download/win](https://git-scm.com/download/win).
-        -   Run the installer. Use the default settings for all steps.
-    2.  **Install Node.js:**
-        -   Download the Node.js "LTS" (Long-Term Support) installer from [nodejs.org](https://nodejs.org/).
-        -   Run the installer. Use the default settings.
+3.  **First Launch (Important!)**
+    -   When you first open the app, it will automatically download the **MedGemma AI model** (~5 GB).
+    -   **Please be patient.** Does not close the app. You will see progress in the status bar.
+    -   Once finished, you can start analyzing images immediately!
 
-- **For macOS:**
-    1.  **Install Git (via Homebrew):**
-        -   Open the **Terminal** app (you can find it in `Applications/Utilities`).
-        -   Install Homebrew by pasting this command and pressing Enter:
-            ```bash
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            ```
-        -   Once Homebrew is installed, install Git by running:
-            ```bash
-            brew install git
-            ```
-    2.  **Install Node.js (via Homebrew):**
-        -   In the same Terminal window, run:
-            ```bash
-            brew install node
-            ```
+---
 
-### Step 1: Download the Application
+## Installation (For Developers)
 
-1.  Open your terminal application:
-    -   **Windows:** Open the **Start Menu**, type `cmd`, and press Enter.
-    -   **macOS:** Open the **Terminal** app (from `Applications/Utilities`).
-
-2.  Navigate to your Desktop (or any folder you prefer) by typing this command and pressing Enter:
-    ```bash
-    cd Desktop
-    ```
-
-3.  Clone the project repository from GitHub. This command downloads the application's source code:
-    ```bash
-    git clone https://github.com/KeNFT1/medgemma-viewer.git
-    ```
-
-4.  Navigate into the newly created `electron-app` directory:
-    ```bash
-    cd medgemma-viewer/electron-app
-    ```
-
-### Step 2: Build the Application
-
-This step compiles the source code into a runnable desktop app (`.exe` for Windows, `.app` for macOS).
-
-1.  In the same terminal window (inside the `electron-app` folder), install the necessary dependencies by running:
-    ```bash
-    npm install
-    ```
-
-2.  Now, build the application. This command may take a few minutes.
-    -   **For Windows:**
-        ```bash
-        npm run build:win
-        ```
-    -   **For macOS (Apple Silicon: M1, M2, M3):**
-        ```bash
-        npm run build:mac:arm64
-        ```
-    -   **For macOS (Intel-based):**
-        ```bash
-        npm run build:mac:x64
-        ```
-
-### Step 3: Launch the Application
-
-1.  The finished application is now located in the `electron-app/dist` folder. You can find it using your file explorer.
-2.  Double-click the application to run it:
-    -   **Windows:** `Lulos NOT a Health Copilot.exe`
-    -   **macOS:** `Lulos NOT a Health Copilot.app`
-
-3.  On the first launch, the app will automatically download the necessary AI model (~5 GB). This is a one-time process and may take a while depending on your internet connection.
-
-You are now ready to use the application!
-
-## Developer Quickstart
+If you want to modify the code or build it yourself:
 
 ### Prerequisites
 
