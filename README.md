@@ -1,8 +1,24 @@
-# MedGemma Viewer
+# Lulo's NOT a Health Copilot
+
+<p align="center">
+  <img src="logo.png" alt="Lulo's NOT a Health Copilot" width="200">
+</p>
+
+<p align="center"><em>Don't take medical advice from a monkey.</em></p>
 
 A fully local medical image analysis application powered by [MedGemma 1.5](https://huggingface.co/google/medgemma-4b-it) and [Ollama](https://ollama.com). Upload X-rays, CT scans, MRI slices, or clinical photos and get AI-powered analysis through a conversational chat interface — all running on your machine with no data leaving your computer.
 
-> **Disclaimer:** For research and educational use only. Not a substitute for professional medical advice, diagnosis, or treatment.
+---
+
+> **WARNING — NOT A MEDICAL DEVICE**
+>
+> This software is **NOT** a medical device, is **NOT** FDA-cleared or approved, and is **NOT** intended to diagnose, treat, cure, or prevent any disease or medical condition. It has not been validated for clinical use and must **NEVER** be used as a substitute for professional medical judgment.
+>
+> **Do not** make any medical decisions based on the output of this software. The AI model may produce inaccurate, incomplete, misleading, or entirely fabricated results. All outputs are for **research and educational purposes only**.
+>
+> **Always consult a qualified healthcare professional** for any medical questions, concerns, or decisions regarding diagnosis, treatment, or care. If you are experiencing a medical emergency, call your local emergency number immediately.
+>
+> The developers, contributors, and maintainers of this project accept **no liability** whatsoever for any harm, injury, loss, or damage — direct or indirect — arising from the use or misuse of this software or its outputs. By using this software, you acknowledge and agree that you do so **entirely at your own risk**.
 
 ---
 
@@ -186,11 +202,19 @@ MIT
 <details>
 <summary><strong>Leer en Espa&ntilde;ol</strong></summary>
 
-# MedGemma Viewer
+# Lulo's NOT a Health Copilot
 
 Una aplicaci&oacute;n completamente local para an&aacute;lisis de im&aacute;genes m&eacute;dicas, impulsada por [MedGemma 1.5](https://huggingface.co/google/medgemma-4b-it) y [Ollama](https://ollama.com). Sube radiograf&iacute;as, tomograf&iacute;as (CT), resonancias magn&eacute;ticas (MRI) o fotos cl&iacute;nicas y obt&eacute;n an&aacute;lisis con inteligencia artificial a trav&eacute;s de una interfaz de chat conversacional &mdash; todo ejecut&aacute;ndose en tu m&aacute;quina sin que ning&uacute;n dato salga de tu computadora.
 
-> **Aviso:** Solo para uso en investigaci&oacute;n y educaci&oacute;n. No sustituye el consejo, diagn&oacute;stico o tratamiento m&eacute;dico profesional.
+> **ADVERTENCIA &mdash; NO ES UN DISPOSITIVO M&Eacute;DICO**
+>
+> Este software **NO** es un dispositivo m&eacute;dico, **NO** cuenta con aprobaci&oacute;n de la FDA ni de ning&uacute;n organismo regulador, y **NO** est&aacute; destinado a diagnosticar, tratar, curar o prevenir ninguna enfermedad o condici&oacute;n m&eacute;dica. No ha sido validado para uso cl&iacute;nico y **NUNCA** debe usarse como sustituto del criterio m&eacute;dico profesional.
+>
+> **No tomes** ninguna decisi&oacute;n m&eacute;dica basada en los resultados de este software. El modelo de IA puede producir resultados inexactos, incompletos, enga&ntilde;osos o completamente fabricados. Todos los resultados son &uacute;nicamente para **fines de investigaci&oacute;n y educaci&oacute;n**.
+>
+> **Siempre consulta a un profesional de salud calificado** para cualquier pregunta, inquietud o decisi&oacute;n m&eacute;dica relacionada con diagn&oacute;stico, tratamiento o atenci&oacute;n. Si est&aacute;s experimentando una emergencia m&eacute;dica, llama a tu n&uacute;mero de emergencias local inmediatamente.
+>
+> Los desarrolladores, colaboradores y mantenedores de este proyecto **no aceptan ninguna responsabilidad** por cualquier da&ntilde;o, lesi&oacute;n, p&eacute;rdida o perjuicio &mdash; directo o indirecto &mdash; derivado del uso o mal uso de este software o sus resultados. Al usar este software, reconoces y aceptas que lo haces **completamente bajo tu propio riesgo**.
 
 ---
 
