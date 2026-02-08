@@ -620,16 +620,24 @@
       background: var(--accent-hover);
     }
 
-    .btn:disabled {
-      opacity: 0.4;
+    .btn.primary:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    .btn.cancel {
+      background: var(--red);
+      color: white;
+      display: none;
+    }
+
+    .btn.cancel.visible {
+      display: inline-flex;
     }
 
     /* Loading spinner */
     .loading-bar {
       display: none;
-      padding: 0 16px 8px;
-      flex-shrink: 0;
     }
 
     .loading-bar.visible {
@@ -647,8 +655,32 @@
       height: 100%;
       background: var(--accent);
       border-radius: 2px;
-      transition: width 0.3s;
+      transition: width 0.2s;
       width: 0%;
+    }
+
+    .loading-bar.indeterminate .loading-bar-fill {
+      width: 100%;
+      background-image: linear-gradient(45deg,
+          rgba(255, 255, 255, 0.15) 25%,
+          transparent 25%,
+          transparent 50%,
+          rgba(255, 255, 255, 0.15) 50%,
+          rgba(255, 255, 255, 0.15) 75%,
+          transparent 75%,
+          transparent);
+      background-size: 20px 20px;
+      animation: progress-stripes 1s linear infinite;
+    }
+
+    @keyframes progress-stripes {
+      from {
+        background-position: 20px 0;
+      }
+
+      to {
+        background-position: 0 0;
+      }
     }
 
     /* ── Threads tab ── */
@@ -986,10 +1018,11 @@
         <div class="message system-msg" data-i18n="chatWelcome">Upload a medical image and click Analyze, or load
           clinical notes to ask questions.</div>
       </div>
-      <div class="chat-input-area">
+      <div class="chat-input-container">
         <textarea id="chatInput" placeholder="Ask about the image or clinical notes..." rows="1"
           data-i18n-placeholder="chatPlaceholder"></textarea>
-        <button class="send-btn" id="sendBtn" title="Send">&#9654;</button>
+        <button class="btn cancel" id="cancelBtn" title="Stop generating">Stop</button>
+        <button class="btn primary" id="sendBtn">&#10148;</button>
       </div>
       <div class="disclaimer" data-i18n="disclaimer">
         Don't take medical advice from a monkey. For research and educational use only.
@@ -2123,6 +2156,17 @@
     //  CHAT
     // ════════════════════════════════════════
 
+    let abortController = null;
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    cancelBtn.addEventListener('click', () => {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+        // UI reset handled in finally block or error handler of sendToOllama
+      }
+    });
+
     function addMessage(role, text) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
@@ -2154,6 +2198,13 @@
       isStreaming = true;
       sendBtn.disabled = true;
       analyzeBtn.disabled = true;
+      cancelBtn.classList.add('visible');
+
+      // Show loading bar (indeterminate)
+      loadingBar.classList.add('visible');
+      loadingBar.classList.add('indeterminate');
+
+      abortController = new AbortController();
 
       const model = modelNameInput.value.trim() || 'medgemma-vision';
       const promptText = buildPromptWithContext(userText);
@@ -2174,7 +2225,8 @@
         const res = await fetch(OLLAMA_BASE + '/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: conversationHistory, stream: true })
+          body: JSON.stringify({ model, messages: conversationHistory, stream: true }),
+          signal: abortController.signal
         });
 
         if (!res.ok) {
@@ -2208,11 +2260,20 @@
 
       } catch (err) {
         streamDiv.classList.remove('streaming');
-        streamDiv.textContent = 'Error: ' + err.message;
-        streamDiv.style.color = 'var(--red)';
+        if (err.name === 'AbortError') {
+          streamDiv.textContent += ' [Stopped]';
+          conversationHistory.push({ role: 'assistant', content: fullResponse }); // Save partial
+        } else {
+          streamDiv.textContent = 'Error: ' + err.message;
+          streamDiv.style.color = 'var(--red)';
+        }
       } finally {
         isStreaming = false;
         sendBtn.disabled = false;
+        cancelBtn.classList.remove('visible');
+        loadingBar.classList.remove('visible');
+        loadingBar.classList.remove('indeterminate');
+        abortController = null;
         if (loadedSlices.length > 0 && selectedSliceIndices.length > 0) analyzeBtn.disabled = false;
       }
     }
