@@ -5,6 +5,10 @@
     "name": "Lulo",
     "email": "lulo@example.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KeNFT1/medgemma-viewer.git"
+  },
   "description": "Local medical image analysis - Don't take medical advice from a monkey",
   "main": "main.js",
   "scripts": {
