@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedGemma Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/dicom-parser@1.8.21/dist/dicomParser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232733;
+      --border: #2e3345;
+      --text: #e4e6ed;
+      --text-dim: #8b8fa3;
+      --accent: #4f8cff;
+      --accent-hover: #6ba0ff;
+      --green: #34d399;
+      --red: #f87171;
+      --orange: #fb923c;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      transition: background 0.3s;
+    }
+    .status-dot.connected { background: var(--green); }
+
+    .status-label { font-size: 13px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Left panel ── */
+    .panel-left {
+      width: 420px;
+      min-width: 360px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    /* Tabs */
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-tab {
+      flex: 1;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .panel-tab:hover { color: var(--text); }
+    .panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .tab-content.active { display: flex; }
+
+    /* ── Images tab ── */
+    .drop-zone {
+      margin: 12px 16px;
+      flex: 1;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+      min-height: 180px;
+    }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,140,255,0.05); }
+    .drop-zone.has-image { border-style: solid; border-color: var(--border); cursor: default; }
+    .drop-zone input[type="file"] { display: none; }
+    .drop-icon { font-size: 36px; opacity: 0.5; }
+    .drop-text { color: var(--text-dim); font-size: 13px; text-align: center; line-height: 1.6; }
+    .drop-text strong { color: var(--accent); }
+
+    .preview-img {
+      max-width: 100%; max-height: 100%;
+      object-fit: contain; display: none; border-radius: 8px;
+    }
+    .drop-zone.has-image .drop-placeholder { display: none; }
+    .drop-zone.has-image .preview-img { display: block; }
+
+    /* Slice gallery */
+    .slice-gallery-container { display: none; padding: 0 16px; flex-shrink: 0; }
+    .slice-gallery-container.visible { display: block; }
+
+    .slice-gallery-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0; font-size: 12px; color: var(--text-dim);
+    }
+    .slice-gallery-actions { display: flex; gap: 6px; }
+    .slice-gallery-actions button {
+      padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text-dim); cursor: pointer;
+      font-size: 11px; font-family: inherit;
+    }
+    .slice-gallery-actions button:hover { background: var(--border); color: var(--text); }
+
+    .slice-gallery {
+      display: flex; gap: 4px; overflow-x: auto;
+      padding: 4px 0 8px; scroll-behavior: smooth;
+    }
+    .slice-gallery::-webkit-scrollbar { height: 4px; }
+    .slice-gallery::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .slice-thumb {
+      width: 56px; height: 56px; flex-shrink: 0;
+      border-radius: 4px; border: 2px solid transparent;
+      cursor: pointer; object-fit: cover;
+      opacity: 0.6; transition: opacity 0.15s, border-color 0.15s;
+    }
+    .slice-thumb:hover { opacity: 0.9; }
+    .slice-thumb.viewing { opacity: 1; border-color: var(--text-dim); }
+    .slice-thumb.selected { opacity: 1; border-color: var(--accent); }
+
+    /* DICOM info bar */
+    .dicom-info {
+      display: none; padding: 4px 16px 4px; font-size: 11px; color: var(--text-dim);
+      flex-shrink: 0;
+    }
+    .dicom-info.visible { display: flex; align-items: center; gap: 8px; }
+    .dicom-badge {
+      background: rgba(79,140,255,0.15); color: var(--accent);
+      padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10px;
+    }
+
+    .image-actions { padding: 0 16px 12px; display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* ── Notes tab ── */
+    .notes-drop-zone {
+      margin: 12px 16px 8px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+    .notes-drop-zone:hover, .notes-drop-zone.drag-over {
+      border-color: var(--accent); background: rgba(79,140,255,0.05);
+    }
+    .notes-drop-zone .drop-icon { font-size: 28px; opacity: 0.5; }
+    .notes-drop-zone .drop-text { font-size: 12px; margin-top: 6px; }
+    .notes-drop-zone input[type="file"] { display: none; }
+
+    .notes-textarea-wrap { flex: 1; padding: 0 16px; display: flex; flex-direction: column; min-height: 0; }
+    .notes-textarea-label { font-size: 12px; color: var(--text-dim); padding: 4px 0; }
+    .notes-textarea {
+      flex: 1; width: 100%; resize: none;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface2); color: var(--text);
+      padding: 10px 12px; font-size: 13px; font-family: inherit; line-height: 1.5;
+    }
+    .notes-textarea::placeholder { color: var(--text-dim); }
+    .notes-textarea:focus { outline: none; border-color: var(--accent); }
+
+    .notes-footer {
+      padding: 8px 16px 12px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    .notes-char-count { font-size: 11px; color: var(--text-dim); }
+    .notes-char-count.warning { color: var(--orange); }
+    .notes-actions { display: flex; gap: 8px; }
+
+    /* ── Right panel: chat ── */
+    .panel-right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .chat-header {
+      padding: 8px 16px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .chat-header label { flex-shrink: 0; }
+    .chat-header input {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 8px; font-size: 13px; font-family: inherit; width: 200px;
+    }
+    .chat-header input:focus { outline: none; border-color: var(--accent); }
+
+    .notes-indicator {
+      display: none; align-items: center; gap: 4px;
+      background: rgba(52,211,153,0.12); color: var(--green);
+      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;
+      margin-left: auto;
+    }
+    .notes-indicator.visible { display: flex; }
+    .notes-indicator button {
+      background: none; border: none; color: var(--green); cursor: pointer;
+      font-size: 14px; padding: 0 0 0 4px; opacity: 0.7;
+    }
+    .notes-indicator button:hover { opacity: 1; }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 20px 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .message { max-width: 720px; line-height: 1.65; font-size: 14px; }
+    .message.user {
+      align-self: flex-end; background: var(--accent); color: #fff;
+      padding: 10px 16px; border-radius: 16px 16px 4px 16px;
+    }
+    .message.assistant {
+      align-self: flex-start; background: var(--surface2);
+      padding: 14px 18px; border-radius: 4px 16px 16px 16px;
+      white-space: pre-wrap; width: 100%;
+    }
+    .message.assistant.streaming { border-left: 3px solid var(--accent); }
+    .message.system-msg {
+      align-self: center; color: var(--text-dim);
+      font-size: 13px; font-style: italic;
+    }
+
+    .chat-input-area {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px;
+    }
+    .chat-input-area textarea {
+      flex: 1; resize: none; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--surface2); color: var(--text);
+      padding: 12px 14px; font-size: 14px; font-family: inherit;
+      line-height: 1.4; min-height: 44px; max-height: 140px;
+    }
+    .chat-input-area textarea::placeholder { color: var(--text-dim); }
+    .chat-input-area textarea:focus { outline: none; border-color: var(--accent); }
+
+    .send-btn {
+      width: 44px; height: 44px; border-radius: 10px; border: none;
+      background: var(--accent); color: #fff; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.15s;
+    }
+    .send-btn:hover { background: var(--accent-hover); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .disclaimer {
+      padding: 8px 16px; font-size: 11px; color: var(--text-dim);
+      text-align: center; border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); cursor: pointer;
+      font-size: 13px; font-weight: 500; transition: background 0.15s, border-color 0.15s;
+      flex: 1; text-align: center; font-family: inherit;
+    }
+    .btn:hover { background: var(--border); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Loading spinner */
+    .loading-bar { display: none; padding: 0 16px 8px; flex-shrink: 0; }
+    .loading-bar.visible { display: block; }
+    .loading-bar-inner {
+      height: 3px; border-radius: 2px; background: var(--border); overflow: hidden;
+    }
+    .loading-bar-fill {
+      height: 100%; background: var(--accent); border-radius: 2px;
+      transition: width 0.3s; width: 0%;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>MedGemma Viewer</h1>
+  <div class="status-label">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Checking Ollama...</span>
+  </div>
+</header>
+
+<div class="main-container">
+  <!-- Left Panel -->
+  <div class="panel-left">
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-tab="images">Images</button>
+      <button class="panel-tab" data-tab="notes">Notes</button>
+    </div>
+
+    <!-- Images Tab -->
+    <div class="tab-content active" id="tabImages">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*,.dcm,.DCM,application/dicom" multiple>
+        <input type="file" id="folderInput" webkitdirectory multiple style="display:none">
+        <div class="drop-placeholder">
+          <div class="drop-icon">&#128444;</div>
+          <div class="drop-text">
+            <strong>Click to upload</strong> or drag &amp; drop<br>
+            or paste an image (Ctrl+V / Cmd+V)<br><br>
+            X-rays, CT/MRI slices (.dcm), photos
+          </div>
+        </div>
+        <img class="preview-img" id="previewImg" alt="Preview">
+      </div>
+
+      <div class="dicom-info" id="dicomInfo">
+        <span class="dicom-badge">DICOM</span>
+        <span id="dicomInfoText"></span>
+      </div>
+
+      <div class="loading-bar" id="loadingBar">
+        <div class="loading-bar-inner"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
+      </div>
+
+      <div class="slice-gallery-container" id="sliceGalleryContainer">
+        <div class="slice-gallery-header">
+          <span id="sliceCountLabel">0 slices</span>
+          <div class="slice-gallery-actions">
+            <button id="autoSelectBtn" title="Select ~6 evenly-spaced slices">Auto-Select</button>
+            <button id="selectAllBtn">Select All</button>
+            <button id="uploadFolderBtn" title="Upload a DICOM folder">+ Folder</button>
+          </div>
+        </div>
+        <div class="slice-gallery" id="sliceGallery"></div>
+      </div>
+
+      <div class="image-actions">
+        <button class="btn" id="clearBtn" disabled>Clear</button>
+        <button class="btn primary" id="analyzeBtn" disabled>Analyze</button>
+      </div>
+    </div>
+
+    <!-- Notes Tab -->
+    <div class="tab-content" id="tabNotes">
+      <div class="notes-drop-zone" id="notesDropZone">
+        <input type="file" id="notesFileInput" accept=".txt,.pdf,.text">
+        <div class="drop-icon">&#128196;</div>
+        <div class="drop-text">
+          <strong>Upload</strong> clinical notes (.txt, .pdf)<br>or paste below
+        </div>
+      </div>
+      <div class="notes-textarea-wrap">
+        <div class="notes-textarea-label">Clinical Notes / After-Visit Summary</div>
+        <textarea class="notes-textarea" id="notesTextarea"
+          placeholder="Paste clinical notes, after-visit summaries, lab results, or any relevant text here..."></textarea>
+      </div>
+      <div class="notes-footer">
+        <span class="notes-char-count" id="notesCharCount">0 chars</span>
+        <div class="notes-actions">
+          <button class="btn" id="clearNotesBtn" style="flex:none;padding:8px 14px">Clear</button>
+          <button class="btn primary" id="loadNotesBtn" style="flex:none;padding:8px 14px">Load into Chat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Chat -->
+  <div class="panel-right">
+    <div class="chat-header">
+      <label>Model:</label>
+      <input type="text" id="modelName" value="medgemma-vision" placeholder="model name">
+      <div class="notes-indicator" id="notesIndicator">
+        <span id="notesIndicatorText">Notes loaded</span>
+        <button id="clearNotesIndicatorBtn" title="Clear notes">&times;</button>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chatInput" placeholder="Ask about the image or clinical notes..." rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" title="Send">&#9654;</button>
+    </div>
+    <div class="disclaimer">
+      For research and educational use only. Not a substitute for professional medical advice.
+    </div>
+  </div>
+</div>
+
+<script>
+const OLLAMA_BASE = 'http://localhost:11434';
+
+// ── DOM refs ──
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const folderInput = document.getElementById('folderInput');
+const previewImg = document.getElementById('previewImg');
+const clearBtn = document.getElementById('clearBtn');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const modelNameInput = document.getElementById('modelName');
+
+const sliceGalleryContainer = document.getElementById('sliceGalleryContainer');
+const sliceGallery = document.getElementById('sliceGallery');
+const sliceCountLabel = document.getElementById('sliceCountLabel');
+const autoSelectBtn = document.getElementById('autoSelectBtn');
+const selectAllBtn = document.getElementById('selectAllBtn');
+const uploadFolderBtn = document.getElementById('uploadFolderBtn');
+const dicomInfo = document.getElementById('dicomInfo');
+const dicomInfoText = document.getElementById('dicomInfoText');
+const loadingBar = document.getElementById('loadingBar');
+const loadingBarFill = document.getElementById('loadingBarFill');
+
+const notesDropZone = document.getElementById('notesDropZone');
+const notesFileInput = document.getElementById('notesFileInput');
+const notesTextarea = document.getElementById('notesTextarea');
+const notesCharCount = document.getElementById('notesCharCount');
+const clearNotesBtn = document.getElementById('clearNotesBtn');
+const loadNotesBtn = document.getElementById('loadNotesBtn');
+const notesIndicator = document.getElementById('notesIndicator');
+const notesIndicatorText = document.getElementById('notesIndicatorText');
+const clearNotesIndicatorBtn = document.getElementById('clearNotesIndicatorBtn');
+
+// ── State ──
+let loadedSlices = [];         // [{base64, fileName, instanceNumber, dataUrl}]
+let selectedSliceIndices = []; // indices into loadedSlices that are selected
+let currentPreviewIndex = -1;  // which slice is shown in main preview
+let conversationHistory = [];
+let isStreaming = false;
+let clinicalNotesText = '';
+let clinicalNotesSource = '';
+let notesInjected = false;
+let isDicomMode = false;
+
+// ── Status check ──
+async function checkOllama() {
+  try {
+    const res = await fetch(OLLAMA_BASE + '/api/tags');
+    if (res.ok) { statusDot.classList.add('connected'); statusText.textContent = 'Ollama connected'; return true; }
+  } catch(e) {}
+  statusDot.classList.remove('connected');
+  statusText.textContent = 'Ollama not reachable';
+  return false;
+}
+checkOllama();
+setInterval(checkOllama, 10000);
+
+// ── Tab switching ──
+document.querySelectorAll('.panel-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab === 'images' ? 'tabImages' : 'tabNotes').classList.add('active');
+  });
+});
+
+// ════════════════════════════════════════
+//  IMAGE / DICOM HANDLING
+// ════════════════════════════════════════
+
+function clearAllImages() {
+  loadedSlices = [];
+  selectedSliceIndices = [];
+  currentPreviewIndex = -1;
+  isDicomMode = false;
+  previewImg.src = '';
+  dropZone.classList.remove('has-image');
+  clearBtn.disabled = true;
+  analyzeBtn.disabled = true;
+  fileInput.value = '';
+  folderInput.value = '';
+  sliceGallery.innerHTML = '';
+  sliceGalleryContainer.classList.remove('visible');
+  dicomInfo.classList.remove('visible');
+  loadingBar.classList.remove('visible');
+  updateSliceCountLabel();
+}
+
+function loadSingleImage(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    const base64 = dataUrl.split(',')[1];
+    loadedSlices = [{ base64, fileName: file.name, instanceNumber: 0, dataUrl }];
+    selectedSliceIndices = [0];
+    currentPreviewIndex = 0;
+    isDicomMode = false;
+    previewImg.src = dataUrl;
+    dropZone.classList.add('has-image');
+    clearBtn.disabled = false;
+    analyzeBtn.disabled = false;
+    sliceGalleryContainer.classList.remove('visible');
+    dicomInfo.classList.remove('visible');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── DICOM processing ──
+function applyWindow(hu, windowWidth, windowLevel) {
+  const min = windowLevel - windowWidth / 2;
+  const max = windowLevel + windowWidth / 2;
+  return Math.max(0, Math.min(255, Math.round(((hu - min) / (max - min)) * 255)));
+}
+
+function processDicomToBase64(arrayBuffer) {
+  const byteArray = new Uint8Array(arrayBuffer);
+  const dataSet = dicomParser.parseDicom(byteArray);
+
+  const rows = dataSet.uint16('x00280010');
+  const cols = dataSet.uint16('x00280011');
+  const bitsAllocated = dataSet.uint16('x00280100');
+  const pixelRep = dataSet.uint16('x00280103') || 0;
+  const slope = parseFloat(dataSet.string('x00281053') || '1');
+  const intercept = parseFloat(dataSet.string('x00281052') || '0');
+  const instanceNumber = parseInt(dataSet.string('x00200013') || '0');
+  const sliceLocation = parseFloat(dataSet.string('x00201041') || '0');
+
+  // Check transfer syntax (only uncompressed supported)
+  const transferSyntax = dataSet.string('x00020010') || '';
+  const uncompressedSyntaxes = ['1.2.840.10008.1.2', '1.2.840.10008.1.2.1', '1.2.840.10008.1.2.2'];
+  if (transferSyntax && !uncompressedSyntaxes.includes(transferSyntax.trim())) {
+    throw new Error('Compressed DICOM not supported. Export as uncompressed or use PNG/JPEG.');
+  }
+
+  const pixelDataElement = dataSet.elements.x7fe00010;
+  if (!pixelDataElement) throw new Error('No pixel data found in DICOM file.');
+
+  let pixelArray;
+  if (bitsAllocated === 16) {
+    pixelArray = pixelRep === 1
+      ? new Int16Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length / 2)
+      : new Uint16Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length / 2);
+  } else if (bitsAllocated === 8) {
+    pixelArray = new Uint8Array(byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length);
+  } else {
+    throw new Error(`Unsupported bits allocated: ${bitsAllocated}`);
+  }
+
+  // Convert to HU and apply 3-channel MedGemma windowing
+  const canvas = document.createElement('canvas');
+  canvas.width = cols;
+  canvas.height = rows;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(cols, rows);
+
+  for (let i = 0; i < rows * cols; i++) {
+    const hu = pixelArray[i] * slope + intercept;
+    imageData.data[i * 4]     = applyWindow(hu, 2250, -100); // R: bone/lung
+    imageData.data[i * 4 + 1] = applyWindow(hu, 350, 40);    // G: soft tissue
+    imageData.data[i * 4 + 2] = applyWindow(hu, 80, 40);     // B: brain
+    imageData.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const dataUrl = canvas.toDataURL('image/png');
+  const base64 = dataUrl.split(',')[1];
+  return { base64, dataUrl, instanceNumber, sliceLocation };
+}
+
+function isDicomFile(file) {
+  const name = file.name.toLowerCase();
+  // Explicit .dcm extension
+  if (name.endsWith('.dcm')) return true;
+  // DICOM files often have no extension — check for no extension + no image MIME type
+  // but only if the file has no recognizable image/text/pdf type
+  if (!name.includes('.') && !file.type) return true;
+  // Some DICOM series use numeric-only filenames (e.g., "000001", "IM00001")
+  if (!file.type && /^(IM)?\d+$/i.test(file.name)) return true;
+  return false;
+}
+
+function isImageFile(file) {
+  if (file.type && file.type.startsWith('image/')) return true;
+  // Fallback: check common image extensions if browser didn't set MIME type
+  const ext = file.name.toLowerCase().split('.').pop();
+  return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff', 'tif', 'svg'].includes(ext);
+}
+
+async function loadMultipleFiles(files) {
+  const fileArray = Array.from(files);
+
+  // Single file shortcut: if only one file and it's not explicitly .dcm, load as image
+  if (fileArray.length === 1 && !isDicomFile(fileArray[0])) {
+    loadSingleImage(fileArray[0]);
+    return;
+  }
+
+  // Classify each file
+  const dicomFiles = fileArray.filter(f => isDicomFile(f));
+  const imageFiles = fileArray.filter(f => !isDicomFile(f) && isImageFile(f));
+
+  // If we have no recognizable files, try treating unknowns as images
+  if (dicomFiles.length === 0 && imageFiles.length === 0) {
+    if (fileArray.length === 1) {
+      loadSingleImage(fileArray[0]);
+      return;
+    }
+  }
+
+  // Single regular image (most common case: X-ray, dermatology photo, screenshot)
+  if (dicomFiles.length === 0 && imageFiles.length === 1) {
+    loadSingleImage(imageFiles[0]);
+    return;
+  }
+
+  // Multiple regular images (e.g. exported slices as PNG/JPEG)
+  if (dicomFiles.length === 0 && imageFiles.length > 1) {
+    isDicomMode = false;
+    loadedSlices = [];
+    loadingBar.classList.add('visible');
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      loadingBarFill.style.width = `${((i + 1) / imageFiles.length) * 100}%`;
+      const dataUrl = await readFileAsDataURL(imageFiles[i]);
+      loadedSlices.push({
+        base64: dataUrl.split(',')[1],
+        dataUrl,
+        fileName: imageFiles[i].name,
+        instanceNumber: i
+      });
+    }
+
+    loadingBar.classList.remove('visible');
+    finishMultiSliceLoad();
+    return;
+  }
+
+  // Single DICOM file — still process through DICOM pipeline
+  // Multiple DICOM files — full series mode
+  isDicomMode = true;
+  loadedSlices = [];
+  let processed = 0;
+  let errors = 0;
+  loadingBar.classList.add('visible');
+
+  const filesToProcess = dicomFiles.length > 0 ? dicomFiles : fileArray;
+
+  for (let i = 0; i < filesToProcess.length; i++) {
+    loadingBarFill.style.width = `${((i + 1) / filesToProcess.length) * 100}%`;
+    try {
+      const buffer = await filesToProcess[i].arrayBuffer();
+      const result = processDicomToBase64(buffer);
+      loadedSlices.push({
+        base64: result.base64,
+        dataUrl: result.dataUrl,
+        fileName: filesToProcess[i].name,
+        instanceNumber: result.instanceNumber,
+        sliceLocation: result.sliceLocation
+      });
+      processed++;
+    } catch (err) {
+      console.warn(`Skipping ${filesToProcess[i].name}: ${err.message}`);
+      errors++;
+    }
+    // Yield to keep UI responsive
+    if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+
+  loadingBar.classList.remove('visible');
+
+  // If all DICOM processing failed, fall back to loading as regular images
+  if (loadedSlices.length === 0) {
+    isDicomMode = false;
+    // Try image files first, then all files as fallback
+    const fallbackFiles = imageFiles.length > 0 ? imageFiles : fileArray;
+    if (fallbackFiles.length === 1) {
+      loadSingleImage(fallbackFiles[0]);
+      return;
+    } else if (fallbackFiles.length > 1) {
+      loadedSlices = [];
+      for (let i = 0; i < fallbackFiles.length; i++) {
+        const dataUrl = await readFileAsDataURL(fallbackFiles[i]);
+        loadedSlices.push({
+          base64: dataUrl.split(',')[1],
+          dataUrl,
+          fileName: fallbackFiles[i].name,
+          instanceNumber: i
+        });
+      }
+      if (loadedSlices.length > 0) {
+        finishMultiSliceLoad();
+        return;
+      }
+    }
+    addMessage('system-msg', `Could not process any files. ${errors} files had errors. Try exporting as PNG or JPEG.`);
+    return;
+  }
+
+  // Sort by instance number then slice location
+  loadedSlices.sort((a, b) => a.instanceNumber - b.instanceNumber || (a.sliceLocation || 0) - (b.sliceLocation || 0));
+
+  dicomInfo.classList.add('visible');
+  dicomInfoText.textContent = `${processed} slices loaded` + (errors > 0 ? `, ${errors} skipped` : '') + ' | 3-channel windowed (R=bone, G=tissue, B=brain)';
+
+  if (loadedSlices.length === 1) {
+    // Single DICOM slice — show in preview without gallery
+    currentPreviewIndex = 0;
+    selectedSliceIndices = [0];
+    previewImg.src = loadedSlices[0].dataUrl;
+    dropZone.classList.add('has-image');
+    clearBtn.disabled = false;
+    analyzeBtn.disabled = false;
+    sliceGalleryContainer.classList.remove('visible');
+  } else {
+    finishMultiSliceLoad();
+  }
+}
+
+function finishMultiSliceLoad() {
+  // Show first slice in preview
+  currentPreviewIndex = 0;
+  previewImg.src = loadedSlices[0].dataUrl;
+  dropZone.classList.add('has-image');
+  clearBtn.disabled = false;
+
+  // Auto-select representative slices
+  autoSelectSlices();
+
+  // Build gallery
+  buildSliceGallery();
+  sliceGalleryContainer.classList.add('visible');
+  analyzeBtn.disabled = false;
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Slice gallery ──
+function buildSliceGallery() {
+  sliceGallery.innerHTML = '';
+  loadedSlices.forEach((slice, i) => {
+    const img = document.createElement('img');
+    img.className = 'slice-thumb';
+    img.src = slice.dataUrl;
+    img.title = `${slice.fileName} (#${slice.instanceNumber})`;
+    if (i === currentPreviewIndex) img.classList.add('viewing');
+    if (selectedSliceIndices.includes(i)) img.classList.add('selected');
+
+    img.addEventListener('click', (e) => {
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        // Toggle selection
+        toggleSliceSelection(i);
+      } else {
+        // View this slice
+        currentPreviewIndex = i;
+        previewImg.src = slice.dataUrl;
+        updateGalleryHighlights();
+      }
+    });
+
+    img.addEventListener('dblclick', () => {
+      toggleSliceSelection(i);
+    });
+
+    sliceGallery.appendChild(img);
+  });
+  updateSliceCountLabel();
+}
+
+function toggleSliceSelection(index) {
+  const pos = selectedSliceIndices.indexOf(index);
+  if (pos >= 0) {
+    selectedSliceIndices.splice(pos, 1);
+  } else {
+    selectedSliceIndices.push(index);
+    selectedSliceIndices.sort((a, b) => a - b);
+  }
+  updateGalleryHighlights();
+  updateSliceCountLabel();
+  analyzeBtn.disabled = selectedSliceIndices.length === 0;
+}
+
+function autoSelectSlices() {
+  const count = loadedSlices.length;
+  if (count <= 8) {
+    selectedSliceIndices = loadedSlices.map((_, i) => i);
+  } else {
+    const n = Math.min(6, count);
+    selectedSliceIndices = [];
+    for (let i = 0; i < n; i++) {
+      selectedSliceIndices.push(Math.round((i / (n - 1)) * (count - 1)));
+    }
+  }
+  updateGalleryHighlights();
+  updateSliceCountLabel();
+  analyzeBtn.disabled = false;
+}
+
+function updateGalleryHighlights() {
+  sliceGallery.querySelectorAll('.slice-thumb').forEach((img, i) => {
+    img.classList.toggle('viewing', i === currentPreviewIndex);
+    img.classList.toggle('selected', selectedSliceIndices.includes(i));
+  });
+}
+
+function updateSliceCountLabel() {
+  if (loadedSlices.length <= 1) {
+    sliceCountLabel.textContent = '';
+    return;
+  }
+  sliceCountLabel.textContent = `${selectedSliceIndices.length} of ${loadedSlices.length} slices selected`;
+}
+
+autoSelectBtn.addEventListener('click', () => { autoSelectSlices(); buildSliceGallery(); });
+selectAllBtn.addEventListener('click', () => {
+  selectedSliceIndices = loadedSlices.map((_, i) => i);
+  updateGalleryHighlights();
+  updateSliceCountLabel();
+  analyzeBtn.disabled = false;
+});
+
+// ── Upload handlers ──
+dropZone.addEventListener('click', () => {
+  if (!dropZone.classList.contains('has-image')) fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) {
+    const files = Array.from(fileInput.files);
+    clearAllImages();
+    loadMultipleFiles(files);
+  }
+});
+
+uploadFolderBtn.addEventListener('click', () => folderInput.click());
+folderInput.addEventListener('change', () => {
+  if (folderInput.files.length > 0) {
+    const files = Array.from(folderInput.files);
+    clearAllImages();
+    loadMultipleFiles(files);
+  }
+});
+
+// Drag and drop
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length > 0) {
+    clearAllImages();
+    loadMultipleFiles(e.dataTransfer.files);
+  }
+});
+
+// Paste from clipboard
+document.addEventListener('paste', (e) => {
+  // Don't intercept if typing in notes textarea
+  if (document.activeElement === notesTextarea) return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      clearAllImages();
+      loadSingleImage(item.getAsFile());
+      return;
+    }
+  }
+});
+
+clearBtn.addEventListener('click', clearAllImages);
+
+// ════════════════════════════════════════
+//  CLINICAL NOTES
+// ════════════════════════════════════════
+
+function updateNotesCharCount() {
+  const len = notesTextarea.value.length;
+  notesCharCount.textContent = `${len.toLocaleString()} chars`;
+  notesCharCount.classList.toggle('warning', len > 4000);
+}
+
+notesTextarea.addEventListener('input', updateNotesCharCount);
+
+// File upload
+notesDropZone.addEventListener('click', () => notesFileInput.click());
+notesDropZone.addEventListener('dragover', (e) => { e.preventDefault(); notesDropZone.classList.add('drag-over'); });
+notesDropZone.addEventListener('dragleave', () => { notesDropZone.classList.remove('drag-over'); });
+notesDropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  notesDropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) loadNotesFile(e.dataTransfer.files[0]);
+});
+notesFileInput.addEventListener('change', () => {
+  if (notesFileInput.files[0]) loadNotesFile(notesFileInput.files[0]);
+});
+
+async function loadNotesFile(file) {
+  const name = file.name.toLowerCase();
+  try {
+    if (name.endsWith('.pdf')) {
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF.js library not loaded. Check your internet connection and reload.');
+      }
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(' ') + '\n\n';
+      }
+      notesTextarea.value = text.trim();
+      clinicalNotesSource = `file: ${file.name}`;
+    } else {
+      // .txt or any text file
+      const text = await file.text();
+      notesTextarea.value = text;
+      clinicalNotesSource = `file: ${file.name}`;
+    }
+    updateNotesCharCount();
+  } catch (err) {
+    addMessage('system-msg', `Error reading file: ${err.message}`);
+  }
+}
+
+loadNotesBtn.addEventListener('click', () => {
+  const text = notesTextarea.value.trim();
+  if (!text) return;
+  clinicalNotesText = text;
+  notesInjected = false;
+  if (!clinicalNotesSource) clinicalNotesSource = 'pasted';
+  showNotesIndicator();
+  addMessage('system-msg', `Clinical notes loaded (${text.length.toLocaleString()} chars). Notes will be included as context in your next message.`);
+});
+
+function showNotesIndicator() {
+  notesIndicator.classList.add('visible');
+  const label = clinicalNotesSource.startsWith('file:')
+    ? clinicalNotesSource.replace('file: ', '')
+    : 'Pasted notes';
+  notesIndicatorText.textContent = `${label} (${clinicalNotesText.length.toLocaleString()} chars)`;
+}
+
+function clearNotes() {
+  clinicalNotesText = '';
+  clinicalNotesSource = '';
+  notesInjected = false;
+  notesTextarea.value = '';
+  notesFileInput.value = '';
+  notesIndicator.classList.remove('visible');
+  updateNotesCharCount();
+}
+
+clearNotesBtn.addEventListener('click', clearNotes);
+clearNotesIndicatorBtn.addEventListener('click', clearNotes);
+
+// ════════════════════════════════════════
+//  CHAT
+// ════════════════════════════════════════
+
+function addMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+function createStreamingMessage() {
+  const div = document.createElement('div');
+  div.className = 'message assistant streaming';
+  div.textContent = '';
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+function buildPromptWithContext(userText) {
+  if (clinicalNotesText && !notesInjected) {
+    notesInjected = true;
+    return `Clinical Notes Context:\n---\n${clinicalNotesText}\n---\n\n${userText}`;
+  }
+  return userText;
+}
+
+async function sendToOllama(userText, imageBase64Array) {
+  if (isStreaming) return;
+  isStreaming = true;
+  sendBtn.disabled = true;
+  analyzeBtn.disabled = true;
+
+  const model = modelNameInput.value.trim() || 'medgemma-vision';
+  const promptText = buildPromptWithContext(userText);
+
+  const userMsg = { role: 'user', content: promptText };
+  if (imageBase64Array && imageBase64Array.length > 0) {
+    userMsg.images = imageBase64Array;
+  }
+  conversationHistory.push(userMsg);
+
+  // Show the original text to user (not the full context-injected version)
+  addMessage('user', userText);
+
+  const streamDiv = createStreamingMessage();
+  let fullResponse = '';
+
+  try {
+    const res = await fetch(OLLAMA_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages: conversationHistory, stream: true })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Ollama returned ${res.status}: ${errText}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(l => l.trim());
+      for (const line of lines) {
+        try {
+          const json = JSON.parse(line);
+          if (json.message?.content) {
+            fullResponse += json.message.content;
+            streamDiv.textContent = fullResponse;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        } catch(parseErr) {}
+      }
+    }
+
+    streamDiv.classList.remove('streaming');
+    conversationHistory.push({ role: 'assistant', content: fullResponse });
+
+  } catch(err) {
+    streamDiv.classList.remove('streaming');
+    streamDiv.textContent = 'Error: ' + err.message;
+    streamDiv.style.color = 'var(--red)';
+  } finally {
+    isStreaming = false;
+    sendBtn.disabled = false;
+    if (loadedSlices.length > 0 && selectedSliceIndices.length > 0) analyzeBtn.disabled = false;
+  }
+}
+
+// Analyze button
+analyzeBtn.addEventListener('click', () => {
+  if (selectedSliceIndices.length === 0) return;
+  const customPrompt = chatInput.value.trim();
+
+  let prompt;
+  if (customPrompt) {
+    prompt = customPrompt;
+  } else if (loadedSlices.length > 1) {
+    prompt = `Analyze these ${selectedSliceIndices.length} medical image slices. ` +
+      (isDicomMode ? 'The images use 3-channel CT windowing (R=bone/lung, G=soft tissue, B=brain). ' : '') +
+      'Describe what you observe across the slices, identify any notable findings, and provide a differential assessment.';
+  } else {
+    prompt = 'Analyze this medical image. Describe what you observe, identify any notable findings, and provide a differential assessment.';
+  }
+
+  chatInput.value = '';
+  const images = selectedSliceIndices.map(i => loadedSlices[i].base64);
+  sendToOllama(prompt, images);
+});
+
+// Send button / Enter
+sendBtn.addEventListener('click', () => {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = '';
+  sendToOllama(text, null);
+});
+
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
+});
+
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+});
+
+// PDF.js worker config
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+</script>
+
+</body>
+</html>

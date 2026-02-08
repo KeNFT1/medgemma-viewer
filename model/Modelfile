@@ -1,0 +1,17 @@
+FROM ./medgemma-1.5-4b-it-Q8_0.gguf
+PROJECTOR ./mmproj-F16.gguf
+
+TEMPLATE """{{- range .Messages }}
+<start_of_turn>{{ .Role }}
+{{ .Content }}
+<end_of_turn>
+{{- end }}
+<start_of_turn>model
+"""
+
+PARAMETER stop <end_of_turn>
+PARAMETER stop <start_of_turn>
+PARAMETER temperature 0.3
+PARAMETER num_ctx 8192
+
+SYSTEM """You are a medical imaging AI assistant based on MedGemma. Analyze medical images including X-rays, CT scans, MRI images, dermatology photos, histopathology slides, and ophthalmology images. Provide detailed, structured observations. Always note that your analysis is for educational and research purposes only, not a substitute for professional medical diagnosis."""
