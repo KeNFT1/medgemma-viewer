@@ -1679,7 +1679,20 @@
       }
       ctx.putImageData(imageData, 0, 0);
 
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+      // Resize if too large
+      if (cols > 768 || rows > 768) {
+        return resizeImage(dataUrl, 768).then(resizedDataUrl => {
+          return {
+            base64: resizedDataUrl.split(',')[1],
+            dataUrl: resizedDataUrl,
+            instanceNumber,
+            sliceLocation
+          };
+        });
+      }
+
       const base64 = dataUrl.split(',')[1];
       return { base64, dataUrl, instanceNumber, sliceLocation };
     }
@@ -1766,7 +1779,7 @@
         loadingBarFill.style.width = `${((i + 1) / filesToProcess.length) * 100}%`;
         try {
           const buffer = await filesToProcess[i].arrayBuffer();
-          const result = processDicomToBase66(buffer);
+          const result = await Promise.resolve(processDicomToBase64(buffer)); // Handle potential async resize
           loadedSlices.push({
             base64: result.base64,
             dataUrl: result.dataUrl,
@@ -1852,9 +1865,36 @@
     function readFileAsDataURL(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
+        reader.onload = e => {
+          const originalDataUrl = e.target.result;
+          resizeImage(originalDataUrl, 768).then(resolve).catch(resolve); // Fallback to original on error
+        };
         reader.onerror = reject;
         reader.readAsDataURL(file);
+      });
+    }
+
+    function resizeImage(dataUrl, maxDim) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w <= maxDim && h <= maxDim) {
+            resolve(dataUrl);
+            return;
+          }
+          if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.8)); // Use JPEG for better compression
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
       });
     }
 
