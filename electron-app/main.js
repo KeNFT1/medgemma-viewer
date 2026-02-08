@@ -15,11 +15,18 @@ function findOllama() {
   const bundledName = isWin ? 'ollama.exe' : 'ollama';
   const bundledPath = path.join(process.resourcesPath, 'binaries', bundledName);
 
+  // Check main resources path
   if (fs.existsSync(bundledPath)) {
     if (!isWin) {
       fs.chmodSync(bundledPath, '755');
     }
     return bundledPath;
+  }
+
+  // Fallback: check nested or adjacent folders (sometimes helpful in different pack modes)
+  const adjacentPath = path.join(app.getAppPath(), '..', 'binaries', bundledName);
+  if (fs.existsSync(adjacentPath)) {
+    return adjacentPath;
   }
   const home = process.env.HOME || process.env.USERPROFILE || '';
 
@@ -45,7 +52,7 @@ function findOllama() {
       if (resolved && !candidates.includes(resolved)) {
         candidates.unshift(resolved);
       }
-    } catch {}
+    } catch { }
   } else {
     // macOS / Linux common install locations
     candidates = [
@@ -64,7 +71,7 @@ function findOllama() {
       if (resolved && !candidates.includes(resolved)) {
         candidates.unshift(resolved);
       }
-    } catch {}
+    } catch { }
 
     try {
       const resolved = execSync('/bin/bash -lc "which ollama"', { stdio: ['pipe', 'pipe', 'ignore'] })
@@ -73,7 +80,7 @@ function findOllama() {
       if (resolved && !candidates.includes(resolved)) {
         candidates.unshift(resolved);
       }
-    } catch {}
+    } catch { }
   }
 
   for (const p of candidates) {
@@ -202,9 +209,16 @@ async function createWindow() {
 
   // ── Startup checks ──
   if (!isOllamaInstalled()) {
+    const isWin = process.platform === 'win32';
+    const bundledName = isWin ? 'ollama.exe' : 'ollama';
+    const searchPaths = [
+      path.join(process.resourcesPath, 'binaries', bundledName),
+      path.join(app.getAppPath(), '..', 'binaries', bundledName)
+    ].join('\n');
+
     dialog.showErrorBox(
       'Ollama Not Found',
-      'Ollama is required but could not be found or downloaded.\n\nCheck your internet connection or download it manually from: https://ollama.com/download\n\nThe app will now quit.'
+      `Could not find the bundled Ollama binary.\n\nSearched locations:\n${searchPaths}\n\nPlease contact support.`
     );
     app.quit();
     return;
