@@ -179,7 +179,7 @@ ollama cp hf.co/unsloth/medgemma-1.5-4b-it-GGUF:Q8_0 medgemma-vision
 
 ## How It Was Built
 
-This project was built entirely through a conversational coding session with Claude (Anthropic's AI assistant) using Claude Code. The full development process — from initial concept to working desktop app — was done iteratively through natural language prompts.
+This project was built entirely through a conversational coding session with **Claude** (Anthropic's AI assistant) and **Gemini** (Google's AI model) using **Claude Code** and **Antigravity**. The full development process — from initial concept to working desktop app — was done iteratively through natural language prompts.
 
 ### Architecture
 
