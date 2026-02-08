@@ -47,6 +47,7 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      -webkit-app-region: drag;
     }
 
     header h1 {
@@ -840,6 +841,10 @@
       border-radius: 3px;
     }
 
+    header {
+      -webkit-app-region: drag;
+    }
+
     .lang-toggle {
       background: none;
       border: 1px solid var(--border);
@@ -851,6 +856,7 @@
       font-weight: 600;
       margin-right: 12px;
       transition: color 0.15s, border-color 0.15s;
+      -webkit-app-region: no-drag;
     }
 
     .lang-toggle:hover {
