@@ -380,7 +380,29 @@ Para compilar un `.app` / `.exe` independiente:
 La aplicación compilada estará en `electron-app/dist/`.
 
 ---
-## Estructura del Proyecto
+ 
+ ## Cómo Fue Construido
+ 
+ Este proyecto fue construido completamente a través de una sesión de codificación conversacional con **Claude** (asistente de IA de Anthropic) y **Gemini** (modelo de IA de Google) usando **Claude Code** y **Antigravity**. El proceso completo de desarrollo — desde el concepto inicial hasta la aplicación de escritorio funcional — se realizó de forma iterativa a través de prompts de lenguaje natural.
+ 
+ ### Arquitectura
+ 
+ La aplicación es un **único archivo HTML** (`index.html`) con CSS y JavaScript en línea, más dos dependencias CDN:
+ - **[dicomParser.js](https://github.com/cornerstonejs/dicomParser)** — Analiza archivos DICOM en el navegador.
+ - **[PDF.js](https://mozilla.github.io/pdf.js/)** — Extrae texto de notas clínicas en PDF.
+ 
+ El backend es **Ollama** ejecutándose localmente, sirviendo el modelo de visión MedGemma 1.5 4B.
+ 
+ ### Aplicación de Escritorio
+ 
+ El envoltorio Electron (`electron-app/`) añade:
+ - Detección automática y empaquetado del binario de Ollama para la plataforma de destino.
+ - Inicio automático del servidor de Ollama.
+ - Descarga del modelo con un clic en el primer inicio (~5 GB).
+ - Compilaciones multiplataforma (macOS, Windows, Linux).
+ 
+ ---
+ ## Estructura del Proyecto
 ```
 medgemma-viewer/
 ├── index.html           # Webapp principal (archivo único)
