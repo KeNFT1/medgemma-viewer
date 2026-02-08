@@ -51,6 +51,18 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          body: |
+            ## 📥 Installation Instructions
+            
+            ### 🪟 Windows
+            1. Download the file ending in **`.exe`** (e.g., `Lulos...Setup...exe`).
+            2. Run the installer.
+            3. *Note: If you see a "Windows SmartScreen" warning, click "More info" and then "Run anyway".*
+
+            ### 🍎 macOS
+            1. Download the file ending in **`.dmg`**.
+            2. Open the file and drag the app to your Applications folder.
+            3. *Note: On first launch, you may need to Right-Click the app and select "Open" to bypass security checks.*
           files: |
             electron-app/dist/*.exe
             electron-app/dist/*.dmg
