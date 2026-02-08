@@ -30,8 +30,10 @@
       "main.js",
       "preload.js",
       "index.html",
-      "logo.png",
-      "binaries/*"
+      "logo.png"
+    ],
+    "extraResources": [
+      "binaries/**"
     ],
     "mac": {
       "category": "public.app-category.medical",
