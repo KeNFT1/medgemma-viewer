@@ -1,8 +1,10 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
-const OLLAMA_VERSION = '0.1.32';
+// Use a recent stable version
+const OLLAMA_VERSION = '0.5.7';
 const BASE_URL = `https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}`;
 const BINARIES_DIR = path.join(__dirname, '..', 'binaries');
 
@@ -27,7 +29,7 @@ function download(url, dest) {
         file.close(resolve);
       });
     }).on('error', (err) => {
-      fs.unlink(dest, () => {});
+      fs.unlink(dest, () => { });
       reject(err);
     });
   });
@@ -46,12 +48,14 @@ async function main() {
   let downloadUrl;
   let downloadFilename;
   let finalFilename;
+  let isZip = false;
 
   if (targetPlatform === 'darwin') {
-    const ollamaArch = targetArch === 'arm64' ? 'arm64' : 'amd64';
-    downloadFilename = `ollama-darwin-${ollamaArch}`;
+    // macOS releases are now universal zips or we use the signed app zip
+    downloadFilename = 'Ollama-darwin.zip';
     downloadUrl = `${BASE_URL}/${downloadFilename}`;
     finalFilename = 'ollama';
+    isZip = true;
   } else if (targetPlatform === 'win32' && targetArch === 'x64') {
     downloadFilename = 'ollama-windows-amd64.exe';
     downloadUrl = `${BASE_URL}/${downloadFilename}`;
@@ -74,13 +78,46 @@ async function main() {
 
   try {
     await download(downloadUrl, tempPath);
-    if (targetPlatform === 'darwin') {
-      fs.chmodSync(tempPath, '755');
+
+    if (isZip && targetPlatform === 'darwin') {
+      console.log('Extracting Ollama binary from zip...');
+      // Unzip strictly the binary we need
+      // The binary is at Ollama.app/Contents/Resources/ollama
+      try {
+        // unzip -j (junk paths) -p (pipe to stdout) doesn't work well with writing to file in all shells generically via execSync easily without piping
+        // simpler: unzip to temp dir, move file, clean up
+        const tempExtractDir = path.join(BINARIES_DIR, 'temp_extract');
+        if (!fs.existsSync(tempExtractDir)) fs.mkdirSync(tempExtractDir);
+
+        execSync(`unzip -q -o "${tempPath}" -d "${tempExtractDir}"`);
+
+        const binarySource = path.join(tempExtractDir, 'Ollama.app', 'Contents', 'Resources', 'ollama');
+
+        if (fs.existsSync(binarySource)) {
+          fs.renameSync(binarySource, finalPath);
+          fs.chmodSync(finalPath, '755');
+        } else {
+          throw new Error(`Binary not found in zip at ${binarySource}`);
+        }
+
+        // Cleanup
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        fs.unlinkSync(tempPath); // remove zip
+
+      } catch (e) {
+        throw new Error(`Failed to extract zip: ${e.message}`);
+      }
+
+    } else {
+      if (targetPlatform === 'darwin') {
+        fs.chmodSync(tempPath, '755');
+      }
+      fs.renameSync(tempPath, finalPath);
     }
-    fs.renameSync(tempPath, finalPath);
-    console.log('Ollama binary downloaded and renamed successfully.');
+
+    console.log('Ollama binary downloaded and ready successfully at', finalPath);
   } catch (error) {
-    console.error('Error downloading Ollama binary:', error);
+    console.error('Error downloading/extracting Ollama binary:', error);
     process.exit(1);
   }
 }

@@ -17,6 +17,7 @@
   "build": {
     "appId": "com.lulo.healthcopilot",
     "productName": "Lulos NOT a Health Copilot",
+    "icon": "logo.png",
     "files": [
       "main.js",
       "preload.js",
@@ -32,7 +33,9 @@
       "target": [
         {
           "target": "dir",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
