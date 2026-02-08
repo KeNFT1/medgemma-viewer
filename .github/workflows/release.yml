@@ -1,0 +1,55 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+        # Linux is optional, can add ubuntu-latest separately
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: electron-app/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: electron-app
+        run: npm ci
+
+      - name: Build for ${{ matrix.os }}
+        working-directory: electron-app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            npm run build:win
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            npm run build:mac:x64
+            # Add mac-arm64 if running on macos-14+ (M1 runners) or cross-compile
+            # Keeping it simple for now (x64 runs on M1 via Rosetta usually, 
+            # but electron-builder can cross-compile arm64 on x64 mac runner)
+            npm run build:mac:arm64
+          fi
+
+      - name: Upload Artifacts to Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            electron-app/dist/*.exe
+            electron-app/dist/*.dmg
+            electron-app/dist/*.zip
+            electron-app/dist/*.AppImage

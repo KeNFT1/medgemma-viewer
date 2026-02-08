@@ -2,6 +2,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const AdmZip = require('adm-zip');
 
 // Use a recent stable version
 const OLLAMA_VERSION = '0.5.7';
@@ -57,9 +58,10 @@ async function main() {
     finalFilename = 'ollama';
     isZip = true;
   } else if (targetPlatform === 'win32' && targetArch === 'x64') {
-    downloadFilename = 'ollama-windows-amd64.exe';
+    downloadFilename = 'ollama-windows-amd64.zip';
     downloadUrl = `${BASE_URL}/${downloadFilename}`;
     finalFilename = 'ollama.exe';
+    isZip = true;
   } else {
     console.log(`Skipping download for unsupported platform/architecture: ${targetPlatform} ${targetArch}`);
     return;
@@ -79,25 +81,40 @@ async function main() {
   try {
     await download(downloadUrl, tempPath);
 
-    if (isZip && targetPlatform === 'darwin') {
+    if (isZip) {
       console.log('Extracting Ollama binary from zip...');
-      // Unzip strictly the binary we need
-      // The binary is at Ollama.app/Contents/Resources/ollama
+      const tempExtractDir = path.join(BINARIES_DIR, 'temp_extract');
+      if (!fs.existsSync(tempExtractDir)) fs.mkdirSync(tempExtractDir);
+
       try {
-        // unzip -j (junk paths) -p (pipe to stdout) doesn't work well with writing to file in all shells generically via execSync easily without piping
-        // simpler: unzip to temp dir, move file, clean up
-        const tempExtractDir = path.join(BINARIES_DIR, 'temp_extract');
-        if (!fs.existsSync(tempExtractDir)) fs.mkdirSync(tempExtractDir);
+        const zip = new AdmZip(tempPath);
+        zip.extractAllTo(tempExtractDir, true);
 
-        execSync(`unzip -q -o "${tempPath}" -d "${tempExtractDir}"`);
+        // execSync(`unzip -q -o "${tempPath}" -d "${tempExtractDir}"`);
 
-        const binarySource = path.join(tempExtractDir, 'Ollama.app', 'Contents', 'Resources', 'ollama');
-
-        if (fs.existsSync(binarySource)) {
-          fs.renameSync(binarySource, finalPath);
-          fs.chmodSync(finalPath, '755');
+        let binarySource;
+        if (targetPlatform === 'darwin') {
+          binarySource = path.join(tempExtractDir, 'Ollama.app', 'Contents', 'Resources', 'ollama');
         } else {
-          throw new Error(`Binary not found in zip at ${binarySource}`);
+          // Try to find the exe at root
+          const potentialPath = path.join(tempExtractDir, 'ollama.exe');
+          if (fs.existsSync(potentialPath)) {
+            binarySource = potentialPath;
+          } else {
+            // Fallback: look for any .exe
+            const files = fs.readdirSync(tempExtractDir);
+            const exeFile = files.find(f => f.toLowerCase().endsWith('.exe'));
+            if (exeFile) {
+              binarySource = path.join(tempExtractDir, exeFile);
+            }
+          }
+        }
+
+        if (binarySource && fs.existsSync(binarySource)) {
+          fs.renameSync(binarySource, finalPath);
+          if (targetPlatform !== 'win32') fs.chmodSync(finalPath, '755');
+        } else {
+          throw new Error(`Binary not found in zip`);
         }
 
         // Cleanup
