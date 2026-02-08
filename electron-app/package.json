@@ -7,9 +7,12 @@
     "start": "electron .",
     "test": "jest",
     "build": "electron-builder",
-    "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win",
-    "build:linux": "electron-builder --linux"
+    "build:mac:arm64": "npm run download-ollama:mac:arm64 && electron-builder --mac --arm64",
+    "build:mac:x64": "npm run download-ollama:mac:x64 && electron-builder --mac --x64",
+    "build:win": "npm run download-ollama:win && electron-builder --win",
+    "download-ollama:mac:arm64": "node scripts/download-ollama.js darwin arm64",
+    "download-ollama:mac:x64": "node scripts/download-ollama.js darwin x64",
+    "download-ollama:win": "node scripts/download-ollama.js win32 x64"
   },
   "build": {
     "appId": "com.lulo.healthcopilot",
@@ -18,7 +21,8 @@
       "main.js",
       "preload.js",
       "index.html",
-      "logo.png"
+      "logo.png",
+      "binaries/*"
     ],
     "mac": {
       "category": "public.app-category.medical",
