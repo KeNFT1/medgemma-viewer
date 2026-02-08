@@ -305,6 +305,64 @@
       transition: width 0.3s; width: 0%;
     }
 
+    /* ── Threads tab ── */
+    #tabThreads { padding: 12px 16px; gap: 10px; overflow-y: auto; }
+    .thread-new-btn {
+      width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;
+      font-family: inherit; transition: background 0.15s; flex-shrink: 0;
+    }
+    .thread-new-btn:hover { background: var(--accent-hover); }
+    .thread-empty-state {
+      text-align: center; color: var(--text-dim); font-size: 13px;
+      padding: 40px 16px; line-height: 1.6;
+    }
+    .thread-list { display: flex; flex-direction: column; gap: 8px; }
+    .thread-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .thread-card:hover { background: var(--surface); border-color: var(--text-dim); }
+    .thread-card.active { border-color: var(--accent); background: rgba(79,140,255,0.08); }
+    .thread-card-header { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+    .thread-title {
+      flex: 1; font-size: 13px; font-weight: 600; color: var(--text);
+      margin: 0; outline: none; word-break: break-word; min-height: 18px;
+      background: none; border: none; padding: 0; font-family: inherit;
+      line-height: 1.4;
+    }
+    .thread-title:focus { color: var(--accent); }
+    .thread-save-btn {
+      background: none; border: none; color: var(--text-dim); font-size: 16px;
+      cursor: pointer; padding: 0; flex-shrink: 0; transition: color 0.15s;
+    }
+    .thread-save-btn:hover { color: var(--orange); }
+    .thread-save-btn.saved { color: var(--orange); }
+    .thread-meta {
+      display: flex; gap: 8px; font-size: 11px; color: var(--text-dim);
+      margin-bottom: 6px; flex-wrap: wrap;
+    }
+    .thread-thumbnails { display: flex; gap: 3px; margin-bottom: 6px; align-items: center; }
+    .thread-thumb {
+      width: 40px; height: 40px; border-radius: 4px; object-fit: cover;
+      border: 1px solid var(--border);
+    }
+    .thread-thumb-more { font-size: 10px; color: var(--text-dim); font-weight: 600; margin-left: 2px; }
+    .thread-actions { display: flex; gap: 6px; }
+    .thread-load-btn {
+      flex: 1; padding: 5px 10px; background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; font-size: 11px;
+      font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s;
+    }
+    .thread-load-btn:hover { background: var(--border); }
+    .thread-delete-btn {
+      padding: 5px 8px; background: none; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--text-dim);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .thread-delete-btn:hover { border-color: var(--red); color: var(--red); }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -327,6 +385,7 @@
     <div class="panel-tabs">
       <button class="panel-tab active" data-tab="images">Images</button>
       <button class="panel-tab" data-tab="notes">Notes</button>
+      <button class="panel-tab" data-tab="threads">Threads</button>
     </div>
 
     <!-- Images Tab -->
@@ -392,6 +451,14 @@
           <button class="btn" id="clearNotesBtn" style="flex:none;padding:8px 14px">Clear</button>
           <button class="btn primary" id="loadNotesBtn" style="flex:none;padding:8px 14px">Load into Chat</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Threads Tab -->
+    <div class="tab-content" id="tabThreads">
+      <button class="thread-new-btn" id="newThreadBtn">+ New Thread</button>
+      <div class="thread-list" id="threadList">
+        <div class="thread-empty-state">No saved threads yet.<br>Threads are created automatically when you analyze images or ask questions.</div>
       </div>
     </div>
   </div>
@@ -468,6 +535,373 @@ let clinicalNotesSource = '';
 let notesInjected = false;
 let isDicomMode = false;
 
+// ── Thread state ──
+let currentThreadId = null;
+let threads = [];
+let imageDB = null;
+
+// ════════════════════════════════════════
+//  INDEXEDDB + THREAD PERSISTENCE
+// ════════════════════════════════════════
+
+function initImageDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('MedGemmaDB', 1);
+    req.onerror = () => { console.warn('IndexedDB not available'); resolve(null); };
+    req.onsuccess = () => { imageDB = req.result; resolve(imageDB); };
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('images')) {
+        db.createObjectStore('images', { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+function saveImageToDB(id, base64, dataUrl) {
+  return new Promise((resolve, reject) => {
+    if (!imageDB) { resolve(); return; }
+    const tx = imageDB.transaction('images', 'readwrite');
+    tx.objectStore('images').put({ id, base64, dataUrl });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function getImageFromDB(id) {
+  return new Promise((resolve, reject) => {
+    if (!imageDB) { resolve(null); return; }
+    const tx = imageDB.transaction('images', 'readonly');
+    const req = tx.objectStore('images').get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function deleteImageFromDB(id) {
+  return new Promise((resolve) => {
+    if (!imageDB) { resolve(); return; }
+    const tx = imageDB.transaction('images', 'readwrite');
+    tx.objectStore('images').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+}
+
+function generateThumbnail(dataUrl, maxSize = 80) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.5));
+    };
+    img.onerror = () => resolve('');
+    img.src = dataUrl;
+  });
+}
+
+function generateId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+}
+
+function loadThreadsFromStorage() {
+  try {
+    const stored = localStorage.getItem('medgemma_threads');
+    threads = stored ? JSON.parse(stored) : [];
+  } catch { threads = []; }
+  cleanupExpiredThreads();
+}
+
+function saveThreadsToStorage() {
+  try {
+    const toStore = threads.map(t => ({
+      ...t,
+      conversationHistory: t.conversationHistory.map(m => ({ role: m.role, content: m.content }))
+    }));
+    localStorage.setItem('medgemma_threads', JSON.stringify(toStore));
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      addMessage('system-msg', 'Storage full. Delete some old threads to free space.');
+    }
+  }
+}
+
+function cleanupExpiredThreads() {
+  const cutoff = Date.now() - (30 * 24 * 60 * 60 * 1000);
+  const expired = threads.filter(t => !t.saved && t.createdAt < cutoff);
+  expired.forEach(t => {
+    (t.images || []).forEach(img => deleteImageFromDB(img.id).catch(() => {}));
+  });
+  threads = threads.filter(t => t.saved || t.createdAt >= cutoff);
+  saveThreadsToStorage();
+}
+
+function generateThreadTitle() {
+  if (loadedSlices.length > 0) {
+    const name = loadedSlices[0].fileName;
+    if (isDicomMode && loadedSlices.length > 1) return `DICOM Series (${loadedSlices.length} slices)`;
+    if (isDicomMode) return `DICOM - ${name}`;
+    const short = name.length > 30 ? name.substring(0, 27) + '...' : name;
+    return short;
+  }
+  if (conversationHistory.length > 0) {
+    const first = conversationHistory[0].content.substring(0, 50);
+    return first.length < conversationHistory[0].content.length ? first + '...' : first;
+  }
+  const d = new Date();
+  return `Session ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function hasUnsavedContent() {
+  return loadedSlices.length > 0 || conversationHistory.length > 0 || clinicalNotesText.length > 0;
+}
+
+async function createThreadFromCurrentState() {
+  const threadId = generateId('thread');
+  const imageMeta = [];
+  for (const slice of loadedSlices) {
+    const imgId = generateId('img');
+    await saveImageToDB(imgId, slice.base64, slice.dataUrl);
+    const thumb = await generateThumbnail(slice.dataUrl);
+    imageMeta.push({
+      id: imgId,
+      fileName: slice.fileName,
+      instanceNumber: slice.instanceNumber,
+      sliceLocation: slice.sliceLocation,
+      thumbnailDataUrl: thumb
+    });
+  }
+  const thread = {
+    id: threadId,
+    title: generateThreadTitle(),
+    createdAt: Date.now(),
+    lastModifiedAt: Date.now(),
+    saved: false,
+    conversationHistory: conversationHistory.map(m => ({ role: m.role, content: m.content })),
+    clinicalNotesText,
+    clinicalNotesSource,
+    notesInjected,
+    images: imageMeta,
+    isDicomMode,
+    selectedSliceIndices: [...selectedSliceIndices]
+  };
+  threads.unshift(thread);
+  saveThreadsToStorage();
+  currentThreadId = threadId;
+  renderThreadList();
+  return thread;
+}
+
+async function updateCurrentThread() {
+  if (!currentThreadId) {
+    if (hasUnsavedContent()) await createThreadFromCurrentState();
+    return;
+  }
+  const thread = threads.find(t => t.id === currentThreadId);
+  if (!thread) return;
+  thread.conversationHistory = conversationHistory.map(m => ({ role: m.role, content: m.content }));
+  thread.clinicalNotesText = clinicalNotesText;
+  thread.clinicalNotesSource = clinicalNotesSource;
+  thread.notesInjected = notesInjected;
+  thread.lastModifiedAt = Date.now();
+  if (!thread.title || thread.title.startsWith('Session ')) thread.title = generateThreadTitle();
+  saveThreadsToStorage();
+  renderThreadList();
+}
+
+async function loadThread(threadId) {
+  const thread = threads.find(t => t.id === threadId);
+  if (!thread) return;
+
+  clearAllImages();
+  conversationHistory = [];
+  chatMessages.innerHTML = '';
+  clinicalNotesText = '';
+  clinicalNotesSource = '';
+  notesInjected = false;
+  notesTextarea.value = '';
+  updateNotesCharCount();
+  notesIndicator.classList.remove('visible');
+
+  loadedSlices = [];
+  for (const imgMeta of thread.images) {
+    const imgData = await getImageFromDB(imgMeta.id);
+    if (imgData) {
+      loadedSlices.push({
+        base64: imgData.base64,
+        dataUrl: imgData.dataUrl,
+        fileName: imgMeta.fileName,
+        instanceNumber: imgMeta.instanceNumber,
+        sliceLocation: imgMeta.sliceLocation
+      });
+    }
+  }
+
+  selectedSliceIndices = [...(thread.selectedSliceIndices || [])];
+  isDicomMode = thread.isDicomMode || false;
+
+  if (loadedSlices.length > 0) {
+    currentPreviewIndex = 0;
+    previewImg.src = loadedSlices[0].dataUrl;
+    dropZone.classList.add('has-image');
+    clearBtn.disabled = false;
+    analyzeBtn.disabled = selectedSliceIndices.length === 0;
+    if (loadedSlices.length > 1) {
+      buildSliceGallery();
+      sliceGalleryContainer.classList.add('visible');
+    }
+    if (isDicomMode) dicomInfo.classList.add('visible');
+  }
+
+  clinicalNotesText = thread.clinicalNotesText || '';
+  clinicalNotesSource = thread.clinicalNotesSource || '';
+  notesInjected = thread.notesInjected || false;
+  if (clinicalNotesText) {
+    notesTextarea.value = clinicalNotesText;
+    updateNotesCharCount();
+    showNotesIndicator();
+  }
+
+  conversationHistory = (thread.conversationHistory || []).map(m => ({ role: m.role, content: m.content }));
+  if (loadedSlices.length > 0) {
+    const firstUser = conversationHistory.find(m => m.role === 'user');
+    if (firstUser) firstUser.images = loadedSlices.map(s => s.base64);
+  }
+  for (const msg of conversationHistory) {
+    if (msg.role === 'user') addMessage('user', msg.content);
+    else if (msg.role === 'assistant') addMessage('assistant', msg.content);
+  }
+
+  currentThreadId = threadId;
+  thread.lastModifiedAt = Date.now();
+  saveThreadsToStorage();
+
+  document.querySelector('[data-tab="images"]').click();
+}
+
+async function deleteThread(threadId) {
+  const thread = threads.find(t => t.id === threadId);
+  if (!thread) return;
+  for (const img of (thread.images || [])) {
+    await deleteImageFromDB(img.id).catch(() => {});
+  }
+  threads = threads.filter(t => t.id !== threadId);
+  saveThreadsToStorage();
+  if (currentThreadId === threadId) {
+    currentThreadId = null;
+    clearAllImages();
+    conversationHistory = [];
+    chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
+  }
+  renderThreadList();
+}
+
+function toggleThreadSaved(threadId) {
+  const thread = threads.find(t => t.id === threadId);
+  if (thread) { thread.saved = !thread.saved; saveThreadsToStorage(); renderThreadList(); }
+}
+
+function renameThread(threadId, newTitle) {
+  const thread = threads.find(t => t.id === threadId);
+  if (thread && newTitle.trim()) {
+    thread.title = newTitle.trim();
+    thread.lastModifiedAt = Date.now();
+    saveThreadsToStorage();
+  }
+}
+
+function formatThreadDate(ts) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(diff / 3600000);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(diff / 86400000);
+  if (days < 7) return `${days}d ago`;
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function renderThreadList() {
+  const container = document.getElementById('threadList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (threads.length === 0) {
+    container.innerHTML = '<div class="thread-empty-state">No saved threads yet.<br>Threads are created automatically when you analyze images or ask questions.</div>';
+    return;
+  }
+
+  threads.forEach(thread => {
+    const card = document.createElement('div');
+    card.className = 'thread-card' + (thread.id === currentThreadId ? ' active' : '');
+
+    const msgCount = thread.conversationHistory.filter(m => m.role === 'assistant').length;
+    const imgCount = (thread.images || []).length;
+    const notesLen = (thread.clinicalNotesText || '').length;
+
+    let thumbsHtml = '';
+    if (imgCount > 0) {
+      const thumbs = thread.images.slice(0, 3).map(img =>
+        img.thumbnailDataUrl ? `<img src="${img.thumbnailDataUrl}" class="thread-thumb" alt="">` : ''
+      ).join('');
+      const more = imgCount > 3 ? `<span class="thread-thumb-more">+${imgCount - 3}</span>` : '';
+      thumbsHtml = `<div class="thread-thumbnails">${thumbs}${more}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="thread-card-header">
+        <input class="thread-title" value="${escapeHtml(thread.title)}" spellcheck="false">
+        <button class="thread-save-btn ${thread.saved ? 'saved' : ''}" title="${thread.saved ? 'Unsave' : 'Save (keep beyond 30 days)'}">
+          ${thread.saved ? '&#9733;' : '&#9734;'}
+        </button>
+      </div>
+      <div class="thread-meta">
+        <span>${formatThreadDate(thread.lastModifiedAt)}</span>
+        ${imgCount > 0 ? `<span>&#128247; ${imgCount}</span>` : ''}
+        ${notesLen > 0 ? `<span>&#128221; ${(notesLen / 1000).toFixed(1)}K</span>` : ''}
+        ${msgCount > 0 ? `<span>&#128172; ${msgCount}</span>` : ''}
+      </div>
+      ${thumbsHtml}
+      <div class="thread-actions">
+        <button class="thread-load-btn">Load</button>
+        <button class="thread-delete-btn" title="Delete">&#128465;</button>
+      </div>
+    `;
+
+    card.querySelector('.thread-load-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadThread(thread.id);
+    });
+
+    card.querySelector('.thread-save-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleThreadSaved(thread.id);
+    });
+
+    card.querySelector('.thread-delete-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Delete "${thread.title}"?`)) deleteThread(thread.id);
+    });
+
+    const titleInput = card.querySelector('.thread-title');
+    titleInput.addEventListener('change', () => renameThread(thread.id, titleInput.value));
+    titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleInput.blur(); } });
+
+    container.appendChild(card);
+  });
+}
+
 // ── Status check ──
 async function checkOllama() {
   try {
@@ -482,12 +916,14 @@ checkOllama();
 setInterval(checkOllama, 10000);
 
 // ── Tab switching ──
+const tabMap = { images: 'tabImages', notes: 'tabNotes', threads: 'tabThreads' };
 document.querySelectorAll('.panel-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     tab.classList.add('active');
-    document.getElementById(tab.dataset.tab === 'images' ? 'tabImages' : 'tabNotes').classList.add('active');
+    document.getElementById(tabMap[tab.dataset.tab]).classList.add('active');
+    if (tab.dataset.tab === 'threads') renderThreadList();
   });
 });
 
@@ -1074,6 +1510,7 @@ async function sendToOllama(userText, imageBase64Array) {
 
     streamDiv.classList.remove('streaming');
     conversationHistory.push({ role: 'assistant', content: fullResponse });
+    updateCurrentThread();
 
   } catch(err) {
     streamDiv.classList.remove('streaming');
@@ -1128,6 +1565,35 @@ chatInput.addEventListener('input', () => {
 if (typeof pdfjsLib !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
+
+// ════════════════════════════════════════
+//  THREAD UI HANDLERS + INIT
+// ════════════════════════════════════════
+
+document.getElementById('newThreadBtn').addEventListener('click', async () => {
+  if (hasUnsavedContent() && !currentThreadId) {
+    await createThreadFromCurrentState();
+  }
+  currentThreadId = null;
+  clearAllImages();
+  conversationHistory = [];
+  chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
+  clinicalNotesText = '';
+  clinicalNotesSource = '';
+  notesInjected = false;
+  notesTextarea.value = '';
+  updateNotesCharCount();
+  notesIndicator.classList.remove('visible');
+  renderThreadList();
+  document.querySelector('[data-tab="images"]').click();
+});
+
+// Init threads on load
+(async () => {
+  await initImageDB();
+  loadThreadsFromStorage();
+  renderThreadList();
+})();
 
 // Electron status messages (if running inside Electron)
 if (window.electronAPI) {
