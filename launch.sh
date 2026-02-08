@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT=8090
 
 echo "========================================="
-echo "  MedGemma Viewer"
+echo "  Lulo's NOT a Health Copilot"
 echo "========================================="
 echo ""
 

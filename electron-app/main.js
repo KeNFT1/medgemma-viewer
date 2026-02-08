@@ -179,7 +179,7 @@ async function createWindow() {
     height: 820,
     minWidth: 900,
     minHeight: 600,
-    title: 'MedGemma Viewer',
+    title: "Lulo's NOT a Health Copilot",
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,

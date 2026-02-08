@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MedGemma Viewer</title>
+  <title>Lulo's NOT a Health Copilot</title>
   <script src="https://cdn.jsdelivr.net/npm/dicom-parser@1.8.21/dist/dicomParser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
@@ -41,7 +41,8 @@
       justify-content: space-between;
       flex-shrink: 0;
     }
-    header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .header-logo { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
 
     .status-dot {
       width: 8px; height: 8px;
@@ -372,7 +373,7 @@
 <body>
 
 <header>
-  <h1>MedGemma Viewer</h1>
+  <h1><img src="logo.png" alt="Logo" class="header-logo">Lulo's NOT a Health Copilot</h1>
   <div class="status-label">
     <div class="status-dot" id="statusDot"></div>
     <span id="statusText">Checking Ollama...</span>
@@ -481,7 +482,7 @@
       <button class="send-btn" id="sendBtn" title="Send">&#9654;</button>
     </div>
     <div class="disclaimer">
-      For research and educational use only. Not a substitute for professional medical advice.
+      Don't take medical advice from a monkey. For research and educational use only.
     </div>
   </div>
 </div>
