@@ -29,6 +29,8 @@ A fully local medical image analysis application powered by [MedGemma 1.5](https
 - **Multi-slice series** — Upload a full CT or MRI series and browse slices in a thumbnail gallery. Auto-select representative slices or manually pick which ones to send for analysis
 - **Clinical notes context** — Upload after-visit summaries, lab results, or clinical notes (PDF or text) to give the model additional context when answering questions
 - **Conversational chat** — Ask follow-up questions about the image, request focus on specific regions, or discuss findings in a streaming chat interface with full conversation history
+- **Bilingual Support** — Instantly toggle the entire interface and AI prompts between English and Spanish
+- **Window Controls** — Draggable and resizable frameless window on macOS for better usability
 - **Completely local** — Everything runs on your hardware via Ollama. No cloud APIs, no data uploads, no internet required after initial setup
 
 ---
@@ -246,6 +248,8 @@ Una aplicación de análisis de imágenes médicas completamente local, impulsad
 - **Series multi-corte** — Sube una serie completa de CT o MRI y navega los cortes en una galería de miniaturas.
 - **Contexto de notas clínicas** — Sube resúmenes de consulta o notas clínicas (PDF o texto) para dar contexto al modelo.
 - **Chat conversacional** — Haz preguntas de seguimiento sobre la imagen en una interfaz de chat con historial completo.
+- **Soporte Bilingüe** — Alterna instantáneamente toda la interfaz y los prompts de IA entre inglés y español.
+- **Controles de Ventana** — Ventana sin bordes arrastrable y redimensionable en macOS para mayor usabilidad.
 - **Completamente local** — Todo se ejecuta en tu hardware. No se envían datos a la nube.
 
 ---
