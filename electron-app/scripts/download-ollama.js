@@ -4,8 +4,8 @@ const path = require('path');
 const { execSync } = require('child_process');
 const AdmZip = require('adm-zip');
 
-// Use a recent stable version
-const OLLAMA_VERSION = '0.5.7';
+// Use a recent stable version — MedGemma requires 0.6+ for Gemma3 support
+const OLLAMA_VERSION = '0.15.6';
 const BASE_URL = `https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}`;
 const BINARIES_DIR = path.join(__dirname, '..', 'binaries');
 
