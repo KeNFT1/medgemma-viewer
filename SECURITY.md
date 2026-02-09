@@ -18,7 +18,7 @@ We take the security of this software very seriously. If you find a vulnerabilit
 
 Please do **DO NOT** open a public issue on GitHub for security vulnerabilities.
 
-Instead, please email **lulo@introvert.com** (or your preferred contact) with the subject "Vulnerability Report". We will respond as soon as possible.
+Instead, please email **info@avocuddlelife.com** (or your preferred contact) with the subject "Vulnerability Report". We will respond as soon as possible.
 
 ### Response Timeline
 
