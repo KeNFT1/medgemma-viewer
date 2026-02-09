@@ -1027,6 +1027,10 @@
         <div class="message system-msg" data-i18n="chatWelcome">Upload a medical image and click Analyze, or load
           clinical notes to ask questions.</div>
       </div>
+      <div class="chat-input-area">
+        <textarea id="chatInput" rows="1" placeholder="Ask a follow-up question or request a treatment plan..." data-i18n-placeholder="chatPlaceholder"></textarea>
+        <button id="sendBtn" class="send-btn" title="Send">&#9654;</button>
+      </div>
       <div class="disclaimer" data-i18n="disclaimer">
         Don't take medical advice from a monkey. For research and educational use only.
       </div>
@@ -1069,7 +1073,7 @@
         modelLabel: "Model:",
         notesLoaded: "Notes loaded",
         chatWelcome: "Upload a medical image and click Analyze, or load clinical notes to ask questions.",
-        chatPlaceholder: "Ask about the image or clinical notes...",
+        chatPlaceholder: "Ask a follow-up, request a treatment plan, or ask about the image...",
         disclaimer: "Don't take medical advice from a monkey. For research and educational use only.",
         systemStorageFull: "Storage full. Delete some old threads to free space.",
         systemNotesLoaded: "Clinical notes loaded ({count} chars). Notes will be included as context in your next message.",
@@ -1112,7 +1116,7 @@
         modelLabel: "Modelo:",
         notesLoaded: "Notas cargadas",
         chatWelcome: "Sube una imagen médica y haz clic en Analizar, o carga notas para preguntar.",
-        chatPlaceholder: "Pregunta sobre la imagen o notas...",
+        chatPlaceholder: "Haz una pregunta, solicita un plan de tratamiento, o pregunta sobre la imagen...",
         disclaimer: "No aceptes consejos médicos de un mono. Solo para investigación y educación.",
         systemStorageFull: "Almacenamiento lleno. Borra hilos antiguos.",
         systemNotesLoaded: "Notas cargadas ({count} caracteres). Se incluirán como contexto.",
@@ -1192,6 +1196,8 @@
     const clearBtn = document.getElementById('clearBtn');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
     const modelNameInput = document.getElementById('modelName');
@@ -2300,23 +2306,62 @@
       }
 
       if (selectedSliceIndices.length === 0) return;
-      // const customPrompt = chatInput.value.trim(); // Removed
+      const customPrompt = chatInput.value.trim();
 
       let prompt;
-      // if (customPrompt) {
-      //   prompt = customPrompt;
-      // } else if (loadedSlices.length > 1) {
-      if (loadedSlices.length > 1) {
+      if (customPrompt) {
+        prompt = customPrompt;
+      } else if (loadedSlices.length > 1) {
         const dicomContext = isDicomMode ? t('dicomContext') : '';
         prompt = t('promptAnalyzeMulti', { count: selectedSliceIndices.length, dicom: dicomContext });
       } else {
         prompt = t('promptAnalyzeSingle');
       }
 
-      // chatInput.value = '';
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
       const images = selectedSliceIndices.map(i => loadedSlices[i].base64);
       sendToOllama(prompt, images);
     });
+
+    // ── Chat input: Send button + Enter key ──
+    function handleChatSend() {
+      const text = chatInput.value.trim();
+      if (!text || isStreaming) return;
+
+      // If images are loaded, include them with the message
+      const images = selectedSliceIndices.length > 0
+        ? selectedSliceIndices.map(i => loadedSlices[i].base64)
+        : null;
+
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      sendToOllama(text, images);
+    }
+
+    sendBtn.addEventListener('click', handleChatSend);
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleChatSend();
+      }
+    });
+
+    // Auto-resize textarea as user types
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+    });
+
+    // Disable send button while streaming
+    const origSetStreaming = () => {
+      sendBtn.disabled = isStreaming;
+    };
+    // Watch isStreaming changes via the analyze button state
+    new MutationObserver(() => {
+      sendBtn.disabled = analyzeBtn.classList.contains('stop');
+    }).observe(analyzeBtn, { attributes: true, attributeFilter: ['class'] });
 
 
     // PDF.js worker config
