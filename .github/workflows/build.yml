@@ -1,0 +1,87 @@
+name: CI Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: electron-app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: electron-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List build output
+        run: |
+          echo "=== dist contents ==="
+          dir dist /s /b
+        shell: cmd
+
+      - name: Upload Windows builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: |
+            electron-app/dist/*.exe
+          if-no-files-found: warn
+
+  build-mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: electron-app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: electron-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build macOS app (arm64)
+        run: npm run build:mac:arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build macOS app (x64)
+        run: npm run build:mac:x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: |
+            electron-app/dist/*.dmg
+            electron-app/dist/*.zip
+          if-no-files-found: warn

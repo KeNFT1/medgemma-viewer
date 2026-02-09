@@ -33,13 +33,21 @@ function findOllama() {
   let candidates;
 
   if (isWin) {
-    // Windows common install locations
+    const localApp = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
+    const progFiles = process.env.ProgramFiles || 'C:\\Program Files';
+    const progFiles86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+
+    // Windows common install locations (Ollama installs to various places across versions)
     candidates = [
-      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe'),
-      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Ollama', 'ollama.exe'),
-      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Ollama', 'ollama.exe'),
+      path.join(localApp, 'Programs', 'Ollama', 'ollama.exe'),
+      path.join(localApp, 'Ollama', 'ollama.exe'),
+      path.join(localApp, 'Ollama', 'ollama app.exe'),
+      path.join(progFiles, 'Ollama', 'ollama.exe'),
+      path.join(progFiles86, 'Ollama', 'ollama.exe'),
       path.join(home, 'AppData', 'Local', 'Programs', 'Ollama', 'ollama.exe'),
       path.join(home, 'AppData', 'Local', 'Ollama', 'ollama.exe'),
+      path.join(home, 'AppData', 'Local', 'Ollama', 'ollama app.exe'),
+      'C:\\Ollama\\ollama.exe',
     ];
 
     // Try Windows where command
@@ -52,7 +60,17 @@ function findOllama() {
       if (resolved && !candidates.includes(resolved)) {
         candidates.unshift(resolved);
       }
-    } catch { }
+    } catch {}
+
+    // Also try PATH search via PowerShell (more reliable than 'where' in some setups)
+    try {
+      const resolved = execSync('powershell -Command "(Get-Command ollama -ErrorAction SilentlyContinue).Source"', { stdio: ['pipe', 'pipe', 'ignore'] })
+        .toString()
+        .trim();
+      if (resolved && !candidates.includes(resolved)) {
+        candidates.unshift(resolved);
+      }
+    } catch {}
   } else {
     // macOS / Linux common install locations
     candidates = [
@@ -108,12 +126,21 @@ function isOllamaRunning() {
 
 function startOllama() {
   return new Promise((resolve, reject) => {
+    const isWin = process.platform === 'win32';
     const env = { ...process.env, OLLAMA_ORIGINS: '*' };
-    ollamaProcess = spawn(ollamaBin, ['serve'], {
+
+    const spawnOpts = {
       env,
       stdio: 'ignore',
       detached: false,
-    });
+    };
+
+    // On Windows, hide the console window that would otherwise appear
+    if (isWin) {
+      spawnOpts.windowsHide = true;
+    }
+
+    ollamaProcess = spawn(ollamaBin, ['serve'], spawnOpts);
 
     ollamaProcess.on('error', (err) => {
       console.error('Failed to start Ollama:', err);
@@ -210,16 +237,15 @@ async function createWindow() {
   // ── Startup checks ──
   if (!isOllamaInstalled()) {
     const isWin = process.platform === 'win32';
-    const bundledName = isWin ? 'ollama.exe' : 'ollama';
-    const searchPaths = [
-      path.join(process.resourcesPath, 'binaries', bundledName),
-      path.join(app.getAppPath(), '..', 'binaries', bundledName)
-    ].join('\n');
-
-    dialog.showErrorBox(
-      'Ollama Not Found',
-      `Could not find the bundled Ollama binary.\n\nSearched locations:\n${searchPaths}\n\nPlease contact support.`
-    );
+    const instructions = isWin
+      ? 'Ollama is required but was not found on this PC.\n\n' +
+        'To install Ollama:\n' +
+        '1. Download from https://ollama.com/download\n' +
+        '2. Run the installer\n' +
+        '3. Restart this app after installation\n\n' +
+        'If Ollama is already installed, make sure it\'s in your system PATH.'
+      : 'Ollama is required but not installed.\n\nDownload it from: https://ollama.com/download\n\nThe app will now quit.';
+    dialog.showErrorBox('Ollama Not Found', instructions);
     app.quit();
     return;
   }
