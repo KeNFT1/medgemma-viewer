@@ -40,7 +40,7 @@ jobs:
         shell: cmd
 
       - name: Upload Windows builds
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: windows-builds
           path: |
@@ -78,7 +78,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS builds
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: macos-builds
           path: |
