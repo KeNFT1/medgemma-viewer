@@ -745,6 +745,32 @@
     .pacs-form input:focus { outline: none; border-color: var(--accent); }
     .pacs-note { font-size: 11px; color: var(--text-3); margin-top: 4px; }
 
+    /* Sources modal — connected state */
+    .disconnect-row { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .disconnect-row-info { flex:1; }
+    .disconnect-row-name { font-size:13px; font-weight:500; }
+    .disconnect-row-sub  { font-size:11px; color:var(--text-2); margin-top:1px; }
+    .disconnect-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border-2); background:transparent; color:var(--text-2); font-size:12px; cursor:pointer; font-family:inherit; white-space:nowrap; }
+    .disconnect-btn:hover { border-color:var(--red); color:var(--red); }
+    .pacs-cred-fields { display:flex; flex-direction:column; gap:8px; }
+    .resource-list { display:flex; flex-direction:column; gap:4px; max-height:200px; overflow-y:auto; margin-bottom:12px; }
+    .resource-row { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; background:var(--surface-2); font-size:12px; cursor:pointer; }
+    .resource-row input[type=checkbox] { accent-color:var(--accent); flex-shrink:0; }
+    .resource-row label { flex:1; min-width:0; cursor:pointer; }
+    .resource-row-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+    .resource-row-meta  { font-size:11px; color:var(--text-2); font-family:'IBM Plex Mono',monospace; margin-top:1px; }
+    .resource-row-type  { font-size:10px; color:var(--text-3); font-family:'IBM Plex Mono',monospace; flex-shrink:0; }
+    .import-footer { display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
+    .import-count { font-size:12px; color:var(--text-2); }
+    .import-btn { padding:8px 14px; border-radius:8px; background:var(--accent); border:none; color:var(--on-accent); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .import-btn:disabled { opacity:.4; cursor:default; }
+    .study-list { display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; margin-top:8px; }
+    .study-row { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; background:var(--surface-2); cursor:pointer; }
+    .study-row:hover { background:var(--surface-3); }
+    .study-badge { font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; color:var(--accent); width:28px; flex-shrink:0; text-align:center; }
+    .study-title { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .study-meta  { font-size:11px; color:var(--text-2); font-family:'IBM Plex Mono',monospace; margin-top:1px; }
+
     /* scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -993,7 +1019,8 @@
         </div>
         <!-- PACS tab -->
         <div class="modal-tab-content" id="pacsTab">
-          <div class="pacs-form">
+          <!-- setup form (shown when not connected) -->
+          <div class="pacs-form" id="pacsSetupForm">
             <div>
               <label data-i18n="pacsUrl">Server URL</label>
               <input type="url" id="pacsUrl" placeholder="https://pacs.example.com/dicomweb" spellcheck="false">
@@ -1007,7 +1034,32 @@
                 <button class="seg-btn" style="flex:1" data-pacs-auth="bearer">Bearer token</button>
               </div>
             </div>
+            <div class="pacs-cred-fields" id="pacsBearerFields" style="display:none">
+              <label>Bearer token</label>
+              <input type="text" id="pacsToken" placeholder="token…" style="font-family:inherit;font-size:12px">
+            </div>
+            <div class="pacs-cred-fields" id="pacsBasicFields" style="display:none">
+              <label>Username</label>
+              <input type="text" id="pacsUser" placeholder="username">
+              <label style="margin-top:4px">Password</label>
+              <input type="password" id="pacsPass" placeholder="password">
+            </div>
             <button class="connect-btn" id="pacsConnectBtn" data-i18n="pacsConnect">Test &amp; connect</button>
+          </div>
+          <!-- connected view (shown when connected) -->
+          <div id="pacsConnectedView" style="display:none">
+            <div class="disconnect-row">
+              <div class="disconnect-row-info">
+                <div class="disconnect-row-name" id="pacsConnectedUrl"></div>
+                <div class="disconnect-row-sub">DICOMweb · QIDO-RS</div>
+              </div>
+              <button class="disconnect-btn" id="pacsDisconnectBtn">Disconnect</button>
+            </div>
+            <div class="pacs-form" style="gap:8px">
+              <input type="text" id="pacsSearchInput" placeholder="Patient ID, name or accession…" style="font-family:inherit">
+              <button class="connect-btn" id="pacsSearchBtn" style="padding:8px">Search studies</button>
+            </div>
+            <div class="study-list" id="studyList"></div>
           </div>
         </div>
       </div>
@@ -1543,17 +1595,246 @@
     document.querySelectorAll('.modal-tab').forEach(tab => {
       tab.addEventListener('click', () => openSourcesModal(tab.dataset.modalTab));
     });
-    document.getElementById('epicConnectBtn').addEventListener('click', () => {
-      addMessage('system-msg', 'Epic / SMART on FHIR integration coming soon. Requires app registration at open.epic.com.');
+    // ── Sources: helpers ────────────────────────────────────────────────────
+    function updateSourcesBtn() {
+      const n = [connections.epic.connected, connections.pacs.connected].filter(Boolean).length;
+      document.getElementById('epicDot').style.background = connections.epic.connected ? 'var(--ok)' : '';
+      document.getElementById('pacsDot').style.background = connections.pacs.connected ? 'var(--ok)' : '';
+      const sb = document.getElementById('sourcesBtn');
+      sb.textContent = n > 0 ? `Sources · ${n} on` : (currentLang === 'es' ? 'Fuentes' : 'Sources');
+    }
+
+    // ── Epic tab rendering ───────────────────────────────────────────────────
+    function renderEpicTab() {
+      const tab = document.getElementById('epicTab');
+      if (!connections.epic.connected) {
+        tab.innerHTML = `
+          <p class="sources-explainer" data-i18n="epicExplainer">Connect your MyChart / Epic account to import health records (imaging reports, lab results, visit notes) as context. This uses SMART on FHIR — read-only access, token stored only on this device.</p>
+          <ul class="fhir-scope-list">
+            <li>patient/DocumentReference.read</li>
+            <li>patient/DiagnosticReport.read</li>
+            <li>patient/Observation.read</li>
+            <li>patient/ImagingStudy.read</li>
+          </ul>
+          <button class="connect-btn" id="epicConnectBtn">${currentLang === 'es' ? 'Iniciar sesión con MyChart' : 'Sign in with MyChart'}</button>
+          <p class="connect-note">SMART on FHIR &middot; token stays on this device &middot; read-only</p>`;
+        bindEpicConnect();
+        return;
+      }
+      const { patientName } = connections.epic;
+      tab.innerHTML = `
+        <div class="disconnect-row">
+          <div class="disconnect-row-info">
+            <div class="disconnect-row-name">Connected to MyChart</div>
+            <div class="disconnect-row-sub">${patientName ? escapeHtml(patientName) : 'Patient connected'}</div>
+          </div>
+          <button class="disconnect-btn" id="epicDisconnectBtn">Disconnect</button>
+        </div>
+        <div id="epicResourceArea"><p style="font-size:12px;color:var(--text-2)">Fetching records…</p></div>`;
+      document.getElementById('epicDisconnectBtn').addEventListener('click', async () => {
+        if (window.epic) await window.epic.disconnect().catch(() => {});
+        connections.epic = { connected: false };
+        updateSourcesBtn();
+        renderEpicTab();
+      });
+      loadEpicResources();
+    }
+
+    function bindEpicConnect() {
+      document.getElementById('epicConnectBtn').addEventListener('click', async () => {
+        if (!window.epic) {
+          addMessage('system-msg', 'Epic / MyChart requires the Electron desktop app — not available in browser mode.');
+          return;
+        }
+        const btn = document.getElementById('epicConnectBtn');
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+        try {
+          const result = await window.epic.authStart();
+          connections.epic = { connected: true, patientId: result.patientId, patientName: result.patientName };
+          updateSourcesBtn();
+          renderEpicTab();
+        } catch (err) {
+          if (document.getElementById('epicConnectBtn')) {
+            document.getElementById('epicConnectBtn').disabled = false;
+            document.getElementById('epicConnectBtn').textContent = currentLang === 'es' ? 'Iniciar sesión con MyChart' : 'Sign in with MyChart';
+          }
+          addMessage('system-msg', `Epic sign-in failed: ${err.message}`);
+        }
+      });
+    }
+
+    async function loadEpicResources() {
+      if (!window.epic || !connections.epic.patientId) return;
+      try {
+        const data = await window.epic.fetchResources(connections.epic.patientId);
+        const area = document.getElementById('epicResourceArea');
+        if (!area) return;
+        const entries = [
+          ...(data.docs     || []).map(e => ({ type: 'DocumentReference', title: e.resource?.description || e.resource?.type?.text || 'Document', date: e.resource?.date?.slice(0,10) || '' })),
+          ...(data.reports  || []).map(e => ({ type: 'DiagnosticReport',   title: e.resource?.code?.text || 'Report',   date: e.resource?.effectiveDateTime?.slice(0,10) || '' })),
+          ...(data.observations || []).map(e => ({ type: 'Observation',    title: e.resource?.code?.text || 'Observation', date: e.resource?.effectiveDateTime?.slice(0,10) || '' })),
+        ];
+        if (!entries.length) { area.innerHTML = '<p style="font-size:12px;color:var(--text-2)">No records found.</p>'; return; }
+        let selected = new Set(entries.map((_, i) => i));
+        const render = () => {
+          area.innerHTML = `
+            <div class="resource-list">${entries.map((e, i) => `
+              <div class="resource-row">
+                <input type="checkbox" id="er${i}" ${selected.has(i) ? 'checked' : ''}>
+                <label for="er${i}">
+                  <div class="resource-row-title">${escapeHtml(e.title)}</div>
+                  <div class="resource-row-meta">${escapeHtml(e.date)}</div>
+                </label>
+                <span class="resource-row-type">${e.type.replace('patient/','').split('.')[0]}</span>
+              </div>`).join('')}
+            </div>
+            <div class="import-footer">
+              <span class="import-count">${selected.size} of ${entries.length} selected</span>
+              <button class="import-btn" id="epicImportBtn" ${selected.size === 0 ? 'disabled' : ''}>Import to new case</button>
+            </div>`;
+          area.querySelectorAll('input[type=checkbox]').forEach((cb, i) => {
+            cb.addEventListener('change', () => { if (cb.checked) selected.add(i); else selected.delete(i); render(); });
+          });
+          const importBtn = area.querySelector('#epicImportBtn');
+          if (importBtn) importBtn.addEventListener('click', () => importEpicResources(entries.filter((_, i) => selected.has(i))));
+        };
+        render();
+      } catch (err) {
+        const area = document.getElementById('epicResourceArea');
+        if (area) area.innerHTML = `<p style="font-size:12px;color:var(--red)">${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    function importEpicResources(items) {
+      const text = items.map(e => `${e.type}: ${e.title} (${e.date})`).join('\n');
+      // Create new thread with the Epic data as notes
+      newThread();
+      setTimeout(() => {
+        document.getElementById('notesTextarea').value = text;
+        clinicalNotesText = text;
+        notesIncluded = true;
+        updateNotesIncludePill();
+        updateContextChips();
+        document.getElementById('sourcesModal').classList.remove('open');
+        showCaseView();
+      }, 50);
+    }
+
+    // ── PACS tab rendering ───────────────────────────────────────────────────
+    function renderPacsTab() {
+      const setup = document.getElementById('pacsSetupForm');
+      const connected = document.getElementById('pacsConnectedView');
+      if (connections.pacs.connected) {
+        setup.style.display = 'none';
+        connected.style.display = '';
+        document.getElementById('pacsConnectedUrl').textContent = connections.pacs.url;
+        document.getElementById('pacsDisconnectBtn').addEventListener('click', async () => {
+          if (window.pacs) await window.pacs.disconnect().catch(() => {});
+          connections.pacs = { url: '', connected: false };
+          updateSourcesBtn();
+          renderPacsTab();
+        }, { once: true });
+        document.getElementById('pacsSearchBtn').addEventListener('click', runPacsSearch, { once: false });
+      } else {
+        setup.style.display = '';
+        connected.style.display = 'none';
+        document.getElementById('studyList').innerHTML = '';
+      }
+    }
+
+    async function runPacsSearch() {
+      const q = document.getElementById('pacsSearchInput').value.trim();
+      if (!q || !window.pacs) return;
+      const list = document.getElementById('studyList');
+      list.innerHTML = '<p style="font-size:12px;color:var(--text-2);padding:8px 0">Searching…</p>';
+      try {
+        const studies = await window.pacs.search({ PatientName: q });
+        if (!studies.length) { list.innerHTML = '<p style="font-size:12px;color:var(--text-2);padding:8px 0">No studies found.</p>'; return; }
+        list.innerHTML = studies.map(s => {
+          const tags = s['00080060']?.Value?.[0] || 'IMG';
+          const desc = s['00081030']?.Value?.[0] || s['0008103E']?.Value?.[0] || 'Study';
+          const uid  = s['0020000D']?.Value?.[0] || '';
+          const date = (s['00080020']?.Value?.[0] || '').replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+          return `<div class="study-row" data-uid="${escapeHtml(uid)}">
+            <span class="study-badge">${escapeHtml(tags)}</span>
+            <div>
+              <div class="study-title">${escapeHtml(desc)}</div>
+              <div class="study-meta">${escapeHtml(date)}</div>
+            </div>
+          </div>`;
+        }).join('');
+        list.querySelectorAll('.study-row').forEach(row => {
+          row.addEventListener('click', () => openPacsStudy(row.dataset.uid));
+        });
+      } catch (err) {
+        list.innerHTML = `<p style="font-size:12px;color:var(--red)">${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    async function openPacsStudy(studyUid) {
+      if (!window.pacs) return;
+      try {
+        const series = await window.pacs.openStudy(studyUid);
+        if (!series.length) { addMessage('system-msg', 'No series found in this study.'); return; }
+        document.getElementById('sourcesModal').classList.remove('open');
+        addMessage('system-msg', `Loading ${series.length} series from PACS…`);
+        // Fetch first instance of first series as a preview
+        const firstSeries = series[0];
+        const sUid = firstSeries['0020000E']?.Value?.[0];
+        if (!sUid) return;
+        // TODO: enumerate instances and load via pacs.fetchInstance → existing DICOM pipeline
+        addMessage('system-msg', `Study loaded (WADO-RS instance fetch for ${studyUid.slice(-8)} coming in next PR).`);
+      } catch (err) {
+        addMessage('system-msg', `PACS open study failed: ${err.message}`);
+      }
+    }
+
+    // ── Epic connect button (initial, before tab re-renders) ────────────────
+    bindEpicConnect();
+
+    // ── PACS connect button ─────────────────────────────────────────────────
+    document.getElementById('pacsConnectBtn').addEventListener('click', async () => {
+      if (!window.pacs) {
+        addMessage('system-msg', 'PACS DICOMweb requires the Electron desktop app — not available in browser mode.');
+        return;
+      }
+      const url = document.getElementById('pacsUrl').value.trim();
+      if (!url) return;
+      const authType = document.querySelector('[data-pacs-auth].active')?.dataset.pacsAuth || 'none';
+      const auth = { type: authType };
+      if (authType === 'basic') {
+        auth.user = document.getElementById('pacsUser')?.value || '';
+        auth.pass = document.getElementById('pacsPass')?.value || '';
+      }
+      if (authType === 'bearer') {
+        auth.token = document.getElementById('pacsToken')?.value || '';
+      }
+      const btn = document.getElementById('pacsConnectBtn');
+      btn.disabled = true;
+      btn.textContent = 'Testing…';
+      try {
+        await window.pacs.connect({ url, auth });
+        connections.pacs = { connected: true, url, auth };
+        updateSourcesBtn();
+        renderPacsTab();
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = currentLang === 'es' ? 'Probar y conectar' : 'Test & connect';
+        addMessage('system-msg', `PACS connect failed: ${err.message}`);
+      }
     });
-    document.getElementById('pacsConnectBtn').addEventListener('click', () => {
-      addMessage('system-msg', 'PACS DICOMweb integration coming soon. Requires a QIDO-RS/WADO-RS compatible server.');
-    });
-    // PACS auth segmented
+
+    // PACS auth segmented — show/hide credential fields
     document.querySelectorAll('[data-pacs-auth]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-pacs-auth]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        const type = btn.dataset.pacsAuth;
+        const bf = document.getElementById('pacsBasicFields');
+        const bef = document.getElementById('pacsBearerFields');
+        if (bf)  bf.style.display  = type === 'basic'  ? '' : 'none';
+        if (bef) bef.style.display = type === 'bearer' ? '' : 'none';
       });
     });
 
