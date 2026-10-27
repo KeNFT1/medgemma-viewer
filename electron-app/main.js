@@ -1,5 +1,6 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, net } = require('electron');
 const { spawn, execSync } = require('child_process');
+const epicAuth = require('./epicAuth');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
@@ -232,7 +233,7 @@ async function createWindow() {
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}),
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
 
   // ── Startup checks ──
   if (!isOllamaInstalled()) {
@@ -298,6 +299,102 @@ app.on('before-quit', () => {
   if (ollamaProcess) {
     ollamaProcess.kill();
   }
+});
+
+// ── Epic SMART on FHIR ──────────────────────────────────
+const EPIC_CLIENT_ID   = process.env.EPIC_CLIENT_ID || '';
+const EPIC_FHIR_BASE   = process.env.EPIC_FHIR_BASE || 'https://fhir.epic.com/interconnect-fhir-oauth/oauth2';
+const EPIC_SCOPES      = 'patient/DocumentReference.read patient/DiagnosticReport.read patient/Observation.read patient/ImagingStudy.read openid fhirUser offline_access';
+
+let epicConnections = {};  // keyed by patientId
+
+ipcMain.handle('epic:auth-start', async () => {
+  const result = await epicAuth.startEpicAuth({
+    clientId: EPIC_CLIENT_ID,
+    epicBaseUrl: EPIC_FHIR_BASE,
+    scopes: EPIC_SCOPES,
+    mainWindow,
+  });
+  epicConnections[result.patientId] = result;
+  return result;
+});
+
+ipcMain.handle('epic:fetch-resources', async (_, patientId) => {
+  const conn = epicConnections[patientId];
+  if (!conn) throw new Error('Not connected');
+  const token = await epicAuth.epicRefreshToken({ clientId: EPIC_CLIENT_ID, epicBaseUrl: EPIC_FHIR_BASE });
+  const base = conn.fhirBaseUrl || `${EPIC_FHIR_BASE.replace('/oauth2', '')}/api/FHIR/R4`;
+  const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
+  const [docs, reports, obs] = await Promise.all([
+    net.fetch(`${base}/DocumentReference?patient=${patientId}&_count=50`, { headers }).then(r => r.json()),
+    net.fetch(`${base}/DiagnosticReport?patient=${patientId}&_count=50`, { headers }).then(r => r.json()),
+    net.fetch(`${base}/Observation?patient=${patientId}&category=laboratory&_count=50`, { headers }).then(r => r.json()),
+  ]);
+  return { docs: docs.entry ?? [], reports: reports.entry ?? [], observations: obs.entry ?? [] };
+});
+
+ipcMain.handle('epic:disconnect', async () => {
+  epicAuth.clearEpicTokens();
+  epicConnections = {};
+  return true;
+});
+
+// ── PACS DICOMweb ───────────────────────────────────────
+let pacsConfig = null;  // { url, auth: { type, token?, user?, pass? } }
+
+function pacsHeaders(auth = {}) {
+  if (auth.type === 'bearer') return { Authorization: `Bearer ${auth.token}` };
+  if (auth.type === 'basic')  return { Authorization: `Basic ${Buffer.from(`${auth.user}:${auth.pass}`).toString('base64')}` };
+  return {};
+}
+
+function extractDicomFromMultipart(arrayBuffer) {
+  // Find the DICOM part after the multipart boundary
+  const buf = Buffer.from(arrayBuffer);
+  const boundary = buf.indexOf(Buffer.from('\r\n\r\n'));
+  if (boundary === -1) return buf;
+  // Skip two CRLFCRLF sections (headers) to get to raw DICOM bytes
+  const second = buf.indexOf(Buffer.from('\r\n\r\n'), boundary + 4);
+  if (second === -1) return buf.slice(boundary + 4);
+  return buf.slice(second + 4);
+}
+
+ipcMain.handle('pacs:connect', async (_, config) => {
+  const r = await net.fetch(`${config.url}/studies?limit=1`, { headers: pacsHeaders(config.auth) });
+  if (!r.ok) throw new Error(`PACS returned ${r.status}`);
+  pacsConfig = config;
+  return { connected: true, url: config.url };
+});
+
+ipcMain.handle('pacs:search', async (_, query) => {
+  if (!pacsConfig) throw new Error('Not connected to PACS');
+  const params = new URLSearchParams({ ...query, limit: 20 });
+  const r = await net.fetch(`${pacsConfig.url}/studies?${params}`, { headers: pacsHeaders(pacsConfig.auth) });
+  if (!r.ok) throw new Error(`PACS search failed: ${r.status}`);
+  return r.json();
+});
+
+ipcMain.handle('pacs:open-study', async (_, studyUid) => {
+  if (!pacsConfig) throw new Error('Not connected to PACS');
+  const r = await net.fetch(`${pacsConfig.url}/studies/${studyUid}/series`, { headers: pacsHeaders(pacsConfig.auth) });
+  if (!r.ok) throw new Error(`PACS series list failed: ${r.status}`);
+  return r.json();
+});
+
+ipcMain.handle('pacs:fetch-instance', async (_, studyUid, seriesUid, instanceUid) => {
+  if (!pacsConfig) throw new Error('Not connected to PACS');
+  const r = await net.fetch(
+    `${pacsConfig.url}/studies/${studyUid}/series/${seriesUid}/instances/${instanceUid}`,
+    { headers: { ...pacsHeaders(pacsConfig.auth), Accept: 'multipart/related; type="application/dicom"' } }
+  );
+  if (!r.ok) throw new Error(`PACS instance fetch failed: ${r.status}`);
+  const ab = await r.arrayBuffer();
+  return Buffer.from(extractDicomFromMultipart(ab));
+});
+
+ipcMain.handle('pacs:disconnect', () => {
+  pacsConfig = null;
+  return true;
 });
 
 module.exports = { createWindow };
