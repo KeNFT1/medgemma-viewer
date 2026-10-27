@@ -233,7 +233,11 @@ async function createWindow() {
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}),
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
+  // Dev: load from repo root; packaged: index.html is copied alongside main.js
+  const indexPath = app.isPackaged
+    ? path.join(__dirname, 'index.html')
+    : path.join(__dirname, '..', 'index.html');
+  mainWindow.loadFile(indexPath);
 
   // ── Startup checks ──
   if (!isOllamaInstalled()) {

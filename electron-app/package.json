@@ -29,8 +29,10 @@
     "files": [
       "main.js",
       "preload.js",
-      "index.html",
-      "logo.png"
+      "epicAuth.js",
+      "logo.png",
+      { "from": "../index.html", "to": "index.html" },
+      { "from": "../logo.png",   "to": "logo.png"   }
     ],
     "extraResources": [
       "binaries/**"
