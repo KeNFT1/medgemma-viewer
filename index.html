@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lulo's NOT a Health Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/dicom-parser@1.8.21/dist/dicomParser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
@@ -17,1022 +20,986 @@
     }
 
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #232733;
-      --border: #2e3345;
-      --text: #e4e6ed;
-      --text-dim: #8b8fa3;
-      --accent: #4f8cff;
-      --accent-hover: #6ba0ff;
-      --green: #34d399;
-      --red: #f87171;
-      --orange: #fb923c;
-      --radius: 12px;
+      --bg-viewer: oklch(0.08 0.004 230);
+      --bg-main:   oklch(0.13 0.006 230);
+      --bg:        oklch(0.15 0.008 230);
+      --surface:   oklch(0.17 0.008 230);
+      --surface-2: oklch(0.20 0.01  230);
+      --surface-3: oklch(0.24 0.01  230);
+      --border:    oklch(0.25 0.01  230);
+      --border-2:  oklch(0.30 0.01  230);
+      --text:      oklch(0.94 0.005 230);
+      --text-2:    oklch(0.70 0.01  230);
+      --text-3:    oklch(0.62 0.01  230);
+      --accent:         oklch(0.78 0.11 180);
+      --on-accent:      oklch(0.18 0.03 190);
+      --accent-soft:    oklch(0.26 0.04 190);
+      --accent-soft-border: oklch(0.50 0.08 180);
+      --user-bubble: oklch(0.27 0.02 200);
+      --ok:    oklch(0.78 0.14 155);
+      --red:   oklch(0.65 0.20  25);
+      --orange: oklch(0.75 0.14  55);
+      /* legacy aliases kept for existing JS refs */
+      --surface2: var(--surface-2);
+      --text-dim: var(--text-2);
+      --green: var(--ok);
+      --accent-hover: var(--accent);
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 52px 1fr;
     }
 
+    /* ── Header ── */
     header {
-      padding: 16px 24px;
+      height: 52px;
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
-      display: flex;
+      display: grid;
+      grid-template-columns: clamp(180px,20vw,260px) minmax(0,1fr) auto;
       align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
       -webkit-app-region: drag;
     }
 
-    header h1 {
-      font-size: 18px;
-      font-weight: 600;
+    .hdr-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      padding: 0 16px;
+      border-right: 1px solid var(--border);
+      height: 100%;
     }
 
     .header-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
       object-fit: cover;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--red);
-      transition: background 0.3s;
-    }
-
-    .status-dot.connected {
-      background: var(--green);
-    }
-
-    .status-label {
-      font-size: 13px;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .main-container {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* ── Left panel ── */
-    .panel-left {
-      width: 420px;
-      min-width: 360px;
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
       flex-shrink: 0;
     }
 
-    /* Tabs */
-    .panel-tabs {
+    .hdr-brand { display: flex; flex-direction: column; gap: 1px; }
+    .hdr-brand-name { font-size: 14px; font-weight: 600; line-height: 1; }
+    .hdr-brand-sub  { font-size: 11px; color: var(--text-2); line-height: 1; }
+
+    .hdr-mid {
       display: flex;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .panel-tab {
-      flex: 1;
-      padding: 10px 16px;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-dim);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
-      font-family: inherit;
-    }
-
-    .panel-tab:hover {
-      color: var(--text);
-    }
-
-    .panel-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
-
-    .tab-content {
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .tab-content.active {
-      display: flex;
-    }
-
-    /* ── Images tab ── */
-    .drop-zone {
-      margin: 12px 16px;
-      flex: 1;
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      position: relative;
-      overflow: hidden;
-      min-height: 180px;
-    }
-
-    .drop-zone:hover,
-    .drop-zone.drag-over {
-      border-color: var(--accent);
-      background: rgba(79, 140, 255, 0.05);
-    }
-
-    .drop-zone.has-image {
-      border-style: solid;
-      border-color: var(--border);
-      cursor: default;
-    }
-
-    .drop-zone input[type="file"] {
-      display: none;
-    }
-
-    .drop-icon {
-      font-size: 36px;
-      opacity: 0.5;
-    }
-
-    .drop-text {
-      color: var(--text-dim);
-      font-size: 13px;
-      text-align: center;
-      line-height: 1.6;
-    }
-
-    .drop-text strong {
-      color: var(--accent);
-    }
-
-    .preview-img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      display: none;
-      border-radius: 8px;
-    }
-
-    .drop-zone.has-image .drop-placeholder {
-      display: none;
-    }
-
-    .drop-zone.has-image .preview-img {
-      display: block;
-    }
-
-    /* Slice gallery */
-    .slice-gallery-container {
-      display: none;
+      gap: 8px;
       padding: 0 16px;
-      flex-shrink: 0;
-    }
-
-    .slice-gallery-container.visible {
-      display: block;
-    }
-
-    .slice-gallery-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 0;
-      font-size: 12px;
-      color: var(--text-dim);
-    }
-
-    .slice-gallery-actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .slice-gallery-actions button {
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 11px;
-      font-family: inherit;
-    }
-
-    .slice-gallery-actions button:hover {
-      background: var(--border);
-      color: var(--text);
-    }
-
-    .slice-gallery {
-      display: flex;
-      gap: 4px;
-      overflow-x: auto;
-      padding: 4px 0 8px;
-      scroll-behavior: smooth;
-    }
-
-    .slice-gallery::-webkit-scrollbar {
-      height: 4px;
-    }
-
-    .slice-gallery::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
-    }
-
-    .slice-thumb {
-      width: 56px;
-      height: 56px;
-      flex-shrink: 0;
-      border-radius: 4px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      object-fit: cover;
-      opacity: 0.6;
-      transition: opacity 0.15s, border-color 0.15s;
-    }
-
-    .slice-thumb:hover {
-      opacity: 0.9;
-    }
-
-    .slice-thumb.viewing {
-      opacity: 1;
-      border-color: var(--text-dim);
-    }
-
-    .slice-thumb.selected {
-      opacity: 1;
-      border-color: var(--accent);
-    }
-
-    /* DICOM info bar */
-    .dicom-info {
-      display: none;
-      padding: 4px 16px 4px;
-      font-size: 11px;
-      color: var(--text-dim);
-      flex-shrink: 0;
-    }
-
-    .dicom-info.visible {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dicom-badge {
-      background: rgba(79, 140, 255, 0.15);
-      color: var(--accent);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 10px;
-    }
-
-    .image-actions {
-      padding: 0 16px 12px;
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    /* ── Notes tab ── */
-    .notes-drop-zone {
-      margin: 12px 16px 8px;
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .notes-drop-zone:hover,
-    .notes-drop-zone.drag-over {
-      border-color: var(--accent);
-      background: rgba(79, 140, 255, 0.05);
-    }
-
-    .notes-drop-zone .drop-icon {
-      font-size: 28px;
-      opacity: 0.5;
-    }
-
-    .notes-drop-zone .drop-text {
-      font-size: 12px;
-      margin-top: 6px;
-    }
-
-    .notes-drop-zone input[type="file"] {
-      display: none;
-    }
-
-    .notes-textarea-wrap {
-      flex: 1;
-      padding: 0 16px;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .notes-textarea-label {
-      font-size: 12px;
-      color: var(--text-dim);
-      padding: 4px 0;
-    }
-
-    .notes-textarea {
-      flex: 1;
-      width: 100%;
-      resize: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface2);
-      color: var(--text);
-      padding: 10px 12px;
-      font-size: 13px;
-      font-family: inherit;
-      line-height: 1.5;
-    }
-
-    .notes-textarea::placeholder {
-      color: var(--text-dim);
-    }
-
-    .notes-textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    .notes-footer {
-      padding: 8px 16px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-
-    .notes-char-count {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-
-    .notes-char-count.warning {
-      color: var(--orange);
-    }
-
-    .notes-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    /* ── Right panel: chat ── */
-    .panel-right {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
       min-width: 0;
     }
 
-    .chat-header {
-      padding: 8px 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--text-dim);
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-
-    .chat-header label {
-      flex-shrink: 0;
-    }
-
-    .chat-header input {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 13px;
-      font-family: inherit;
-      width: 200px;
-    }
-
-    .chat-header input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    .notes-indicator {
-      display: none;
-      align-items: center;
-      gap: 4px;
-      background: rgba(52, 211, 153, 0.12);
-      color: var(--green);
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
+    .hdr-case-title {
+      font-size: 14px;
       font-weight: 500;
-      margin-left: auto;
-    }
-
-    .notes-indicator.visible {
-      display: flex;
-    }
-
-    .notes-indicator button {
-      background: none;
-      border: none;
-      color: var(--green);
-      cursor: pointer;
-      font-size: 14px;
-      padding: 0 0 0 4px;
-      opacity: 0.7;
-    }
-
-    .notes-indicator button:hover {
-      opacity: 1;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .message {
-      max-width: 720px;
-      line-height: 1.65;
-      font-size: 14px;
-    }
-
-    .message.user {
-      align-self: flex-end;
-      background: var(--accent);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 16px 16px 4px 16px;
-    }
-
-    .message.assistant {
-      align-self: flex-start;
-      background: var(--surface2);
-      padding: 14px 18px;
-      border-radius: 4px 16px 16px 16px;
-      white-space: pre-wrap;
-      width: 100%;
-    }
-
-    .message.assistant.streaming {
-      border-left: 3px solid var(--accent);
-    }
-
-    .message.system-msg {
-      align-self: center;
-      color: var(--text-dim);
-      font-size: 13px;
-      font-style: italic;
-    }
-
-    .chat-input-area {
-      padding: 16px 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 10px;
-    }
-
-    .chat-input-area textarea {
-      flex: 1;
-      resize: none;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--surface2);
-      color: var(--text);
-      padding: 12px 14px;
-      font-size: 14px;
-      font-family: inherit;
-      line-height: 1.4;
-      min-height: 44px;
-      max-height: 140px;
-    }
-
-    .chat-input-area textarea::placeholder {
-      color: var(--text-dim);
-    }
-
-    .chat-input-area textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    .send-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.15s;
-    }
-
-    .send-btn:hover {
-      background: var(--accent-hover);
-    }
-
-    .send-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .disclaimer {
-      padding: 8px 16px;
-      font-size: 11px;
-      color: var(--text-dim);
-      text-align: center;
-      border-top: 1px solid var(--border);
-    }
-
-    .btn {
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      transition: background 0.15s, border-color 0.15s;
-      flex: 1;
-      text-align: center;
-      font-family: inherit;
-    }
-
-    .btn:hover {
-      background: var(--border);
-    }
-
-    .btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    .btn.primary:hover {
-      background: var(--accent-hover);
-    }
-
-    .btn.stop {
-      background: var(--red);
-      color: white;
-    }
-
-    .btn.stop:hover {
-      background: #c0392b;
-    }
-
-    .btn.primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn.cancel {
-      background: var(--red);
-      color: white;
-      display: none;
-    }
-
-    .btn.cancel.visible {
-      display: inline-flex;
-    }
-
-    /* Loading spinner */
-    .loading-bar {
-      display: none;
-    }
-
-    .loading-bar.visible {
-      display: block;
-    }
-
-    .loading-bar-inner {
-      height: 3px;
-      border-radius: 2px;
-      background: var(--border);
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
     }
 
-    .loading-bar-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-      transition: width 0.2s;
-      width: 0%;
-    }
-
-    .loading-bar.indeterminate .loading-bar-fill {
-      width: 100%;
-      background-image: linear-gradient(45deg,
-          rgba(255, 255, 255, 0.15) 25%,
-          transparent 25%,
-          transparent 50%,
-          rgba(255, 255, 255, 0.15) 50%,
-          rgba(255, 255, 255, 0.15) 75%,
-          transparent 75%,
-          transparent);
-      background-size: 20px 20px;
-      animation: progress-stripes 1s linear infinite;
-    }
-
-    @keyframes progress-stripes {
-      from {
-        background-position: 20px 0;
-      }
-
-      to {
-        background-position: 0 0;
-      }
-    }
-
-    /* ── Threads tab ── */
-    #tabThreads {
-      padding: 12px 16px;
-      gap: 10px;
-      overflow-y: auto;
-    }
-
-    .thread-new-btn {
-      width: 100%;
-      padding: 10px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 13px;
-      font-family: inherit;
-      transition: background 0.15s;
+    .hdr-kind-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-2);
+      white-space: nowrap;
       flex-shrink: 0;
     }
 
-    .thread-new-btn:hover {
-      background: var(--accent-hover);
-    }
-
-    .thread-empty-state {
-      text-align: center;
-      color: var(--text-dim);
-      font-size: 13px;
-      padding: 40px 16px;
-      line-height: 1.6;
-    }
-
-    .thread-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .thread-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-
-    .thread-card:hover {
-      background: var(--surface);
-      border-color: var(--text-dim);
-    }
-
-    .thread-card.active {
-      border-color: var(--accent);
-      background: rgba(79, 140, 255, 0.08);
-    }
-
-    .thread-card-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-
-    .thread-title {
-      flex: 1;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      margin: 0;
-      outline: none;
-      word-break: break-word;
-      min-height: 18px;
-      background: none;
-      border: none;
-      padding: 0;
-      font-family: inherit;
-      line-height: 1.4;
-    }
-
-    .thread-title:focus {
+    .hdr-source-tag {
+      font-size: 11px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-soft-border);
       color: var(--accent);
-    }
-
-    .thread-save-btn {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-size: 16px;
-      cursor: pointer;
-      padding: 0;
+      padding: 2px 7px;
+      border-radius: 999px;
       flex-shrink: 0;
-      transition: color 0.15s;
+      display: none;
     }
 
-    .thread-save-btn:hover {
-      color: var(--orange);
-    }
+    .hdr-source-tag.visible { display: inline-block; }
 
-    .thread-save-btn.saved {
-      color: var(--orange);
-    }
-
-    .thread-meta {
+    .hdr-right {
       display: flex;
-      gap: 8px;
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-      flex-wrap: wrap;
-    }
-
-    .thread-thumbnails {
-      display: flex;
-      gap: 3px;
-      margin-bottom: 6px;
       align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      -webkit-app-region: no-drag;
+      flex-shrink: 0;
     }
 
-    .thread-thumb {
-      width: 40px;
-      height: 40px;
-      border-radius: 4px;
-      object-fit: cover;
-      border: 1px solid var(--border);
-    }
-
-    .thread-thumb-more {
-      font-size: 10px;
-      color: var(--text-dim);
-      font-weight: 600;
-      margin-left: 2px;
-    }
-
-    .thread-actions {
+    .pill-btn {
       display: flex;
+      align-items: center;
       gap: 6px;
-    }
-
-    .thread-load-btn {
-      flex: 1;
       padding: 5px 10px;
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 11px;
+      border-radius: 999px;
+      border: 1px solid var(--border-2);
+      background: var(--surface-2);
+      color: var(--text-2);
+      font-size: 12px;
       font-weight: 500;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s;
-    }
-
-    .thread-load-btn:hover {
-      background: var(--border);
-    }
-
-    .thread-delete-btn {
-      padding: 5px 8px;
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      color: var(--text-dim);
       transition: border-color 0.15s, color 0.15s;
-    }
-
-    .thread-delete-btn:hover {
-      border-color: var(--red);
-      color: var(--red);
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
-    }
-
-    header {
-      -webkit-app-region: drag;
-    }
-
-    .lang-toggle {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 4px 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      margin-right: 12px;
-      transition: color 0.15s, border-color 0.15s;
       -webkit-app-region: no-drag;
     }
 
-    .lang-toggle:hover {
-      color: var(--text);
-      border-color: var(--text-dim);
+    .pill-btn:hover { border-color: var(--text-2); color: var(--text); }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+      transition: background 0.3s;
     }
+
+    .status-dot.connected { background: var(--ok); }
+
+    .status-pill-text { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+
+    /* model popover */
+    .model-popover {
+      position: fixed;
+      top: 56px;
+      right: 8px;
+      width: 300px;
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      border-radius: 10px;
+      padding: 14px;
+      z-index: 200;
+      display: none;
+    }
+    .model-popover.open { display: block; }
+    .model-popover label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 6px; }
+    .model-popover input {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .model-popover input:focus { outline: none; border-color: var(--accent); }
+    .model-popover-note { font-size: 11px; color: var(--text-3); margin-top: 8px; line-height: 1.5; }
+
+    .lang-toggle {
+      background: none;
+      border: 1px solid var(--border-2);
+      color: var(--text-2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-app-region: no-drag;
+      font-family: inherit;
+    }
+    .lang-toggle:hover { color: var(--text); border-color: var(--text-2); }
+
+    /* ── 3-column main ── */
+    .main-container {
+      display: grid;
+      grid-template-columns: clamp(180px,20vw,260px) minmax(0,1fr) clamp(300px,30vw,420px);
+      overflow: hidden;
+      height: 100%;
+    }
+
+    /* ── Left sidebar — cases ── */
+    .panel-left {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Center ── */
+    .panel-center {
+      background: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    /* ── Right — chat ── */
+    .panel-right {
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* segmented control (Scan / Notes) */
+    .seg-control {
+      display: inline-flex;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .seg-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: none;
+      background: none;
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+    }
+    .seg-btn.active { background: var(--surface-3); color: var(--text); }
+
+    /* panel tab content visibility */
+    .tab-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .tab-content.active { display: flex; }
+
+    /* ── Viewer (center column) ── */
+    .viewer-wrap {
+      position: relative;
+      flex: 1;
+      background: var(--bg-viewer);
+      border-radius: 10px;
+      margin: 8px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .drop-zone {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; cursor: pointer;
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: oklch(0.78 0.11 180 / .04); }
+    .drop-zone.has-image { border-style: solid; border-color: transparent; cursor: default; }
+    .drop-zone input[type="file"] { display: none; }
+    .drop-icon { font-size: 32px; opacity: 0.4; }
+    .drop-text { color: var(--text-2); font-size: 13px; text-align: center; line-height: 1.6; }
+    .drop-text strong { color: var(--accent); }
+    .preview-img { width: 100%; height: 100%; object-fit: contain; display: none; }
+    .drop-zone.has-image .drop-placeholder { display: none; }
+    .drop-zone.has-image .preview-img { display: block; }
+
+    /* corner overlays on viewer */
+    .viewer-overlay {
+      position: absolute; pointer-events: none;
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      color: oklch(0.70 0.01 230 / .8);
+      line-height: 1.4;
+    }
+    .viewer-overlay.tl { top: 10px; left: 12px; }
+    .viewer-overlay.tr { top: 10px; right: 12px; text-align: right; }
+
+    /* include-pill */
+    .include-pill {
+      position: absolute; bottom: 10px; left: 12px;
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--border-2);
+      background: var(--surface); color: var(--text-2);
+      font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      pointer-events: all;
+    }
+    .include-pill.included { background: var(--accent-soft); border-color: var(--accent-soft-border); color: var(--accent); }
+
+    /* toolbar above viewer */
+    .center-toolbar {
+      display: flex; align-items: center;
+      gap: 8px; padding: 8px 10px 0;
+      flex-shrink: 0;
+    }
+    .add-files-btn {
+      margin-left: auto; padding: 5px 10px;
+      border-radius: 6px; border: 1px solid var(--border-2);
+      background: var(--surface-2); color: var(--text-2);
+      font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+    .add-files-btn:hover { color: var(--text); border-color: var(--text-2); }
+
+    /* slice controls below viewer */
+    .slice-controls {
+      padding: 6px 10px 4px;
+      flex-shrink: 0;
+      display: none;
+    }
+    .slice-controls.visible { display: block; }
+
+    .slice-count-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text-2); margin-bottom: 4px;
+    }
+    #sliceCountLabel { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+
+    .slice-scrubber {
+      width: 100%; margin: 4px 0;
+      accent-color: var(--accent);
+    }
+
+    .slice-gallery-container { display: none; padding: 0 10px 4px; flex-shrink: 0; }
+    .slice-gallery-container.visible { display: block; }
+    .slice-gallery-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 0; font-size: 11px; color: var(--text-2);
+    }
+    .slice-gallery-actions { display: flex; gap: 6px; }
+    .slice-gallery-actions button {
+      padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text-2);
+      cursor: pointer; font-size: 11px; font-family: inherit;
+    }
+    .slice-gallery-actions button:hover { background: var(--border); color: var(--text); }
+
+    .slice-gallery { display: flex; gap: 3px; overflow-x: auto; padding: 3px 0 6px; }
+    .slice-gallery::-webkit-scrollbar { height: 3px; }
+    .slice-gallery::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .slice-thumb {
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 3px; border: 2px solid transparent;
+      cursor: pointer; object-fit: cover; opacity: 0.55;
+      transition: opacity 0.12s, border-color 0.12s;
+    }
+    .slice-thumb:hover { opacity: 0.85; }
+    .slice-thumb.viewing  { opacity: 1; border-color: var(--text); }
+    .slice-thumb.selected { opacity: 1; border-color: var(--accent); position: relative; }
+    .slice-thumb.selected::after {
+      content: ''; position: absolute; bottom: 2px; right: 2px;
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .slice-hint { font-size: 11px; color: var(--text-3); padding: 2px 0 4px; }
+
+    /* DICOM info bar */
+    .dicom-info { display: none; padding: 2px 10px; font-size: 11px; color: var(--text-2); flex-shrink: 0; }
+    .dicom-info.visible { display: flex; align-items: center; gap: 8px; }
+    .dicom-badge {
+      background: oklch(0.78 0.11 180 / .15); color: var(--accent);
+      padding: 1px 6px; border-radius: 4px; font-weight: 600;
+      font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* loading bar */
+    .loading-bar { display: none; padding: 0 10px; }
+    .loading-bar.visible { display: block; }
+    .loading-bar-inner { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .loading-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.2s; width: 0%; }
+    .loading-bar.indeterminate .loading-bar-fill {
+      width: 100%;
+      background-image: linear-gradient(45deg, oklch(1 0 0 / .15) 25%, transparent 25%, transparent 50%, oklch(1 0 0 / .15) 50%, oklch(1 0 0 / .15) 75%, transparent 75%);
+      background-size: 20px 20px;
+      animation: progress-stripes 1s linear infinite;
+    }
+    @keyframes progress-stripes { from { background-position: 20px 0; } to { background-position: 0 0; } }
+
+    /* ── Notes tab (center) ── */
+    .notes-drop-zone {
+      margin: 10px; border: 2px dashed var(--border); border-radius: 8px;
+      padding: 14px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s; flex-shrink: 0;
+    }
+    .notes-drop-zone:hover, .notes-drop-zone.drag-over { border-color: var(--accent); background: oklch(0.78 0.11 180 / .04); }
+    .notes-drop-zone input[type="file"] { display: none; }
+    .notes-file-label { font-size: 12px; color: var(--text-2); }
+
+    .notes-textarea-wrap { flex: 1; padding: 0 10px; display: flex; flex-direction: column; min-height: 0; }
+    .notes-textarea-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); padding: 6px 0 4px; }
+    .notes-textarea {
+      flex: 1; width: 100%; resize: none;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface-2); color: var(--text);
+      padding: 10px 12px; font-size: 13px; font-family: inherit; line-height: 1.5;
+    }
+    .notes-textarea::placeholder { color: var(--text-3); }
+    .notes-textarea:focus { outline: none; border-color: var(--accent); }
+
+    .notes-footer { padding: 8px 10px 10px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .notes-char-count { font-size: 11px; color: var(--text-2); font-family: 'IBM Plex Mono', monospace; }
+    .notes-char-count.warning { color: var(--orange); }
+
+    .notes-include-pill {
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--border-2); background: var(--surface-2);
+      color: var(--text-2); font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .notes-include-pill.included { background: var(--accent-soft); border-color: var(--accent-soft-border); color: var(--accent); }
+
+    /* ── Left sidebar cases ── */
+    .case-new-btn {
+      margin: 8px; padding: 0 10px; height: 38px;
+      background: var(--accent); color: var(--on-accent);
+      border: none; border-radius: 8px; font-weight: 600;
+      cursor: pointer; font-size: 13px; font-family: inherit;
+      transition: opacity 0.15s; flex-shrink: 0;
+    }
+    .case-new-btn:hover { opacity: 0.88; }
+
+    .case-group-label {
+      padding: 6px 10px 2px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--text-3); flex-shrink: 0;
+    }
+
+    .case-list { flex: 1; overflow-y: auto; padding: 0 6px 8px; }
+
+    .case-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 6px; border-radius: 8px;
+      cursor: pointer; transition: background 0.12s;
+      height: 36px;
+    }
+    .case-row:hover { background: var(--surface-2); }
+    .case-row.active { background: var(--surface-3); }
+
+    .case-thumb {
+      width: 36px; height: 36px; border-radius: 4px;
+      object-fit: cover; flex-shrink: 0;
+      background: var(--surface-3);
+    }
+    .case-thumb-badge {
+      width: 36px; height: 36px; border-radius: 4px;
+      background: repeating-linear-gradient(45deg, var(--surface-3) 0px, var(--surface-3) 4px, var(--border) 4px, var(--border) 8px);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+      font-weight: 500; color: var(--text-2); flex-shrink: 0;
+    }
+
+    .case-info { flex: 1; min-width: 0; }
+    .case-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .case-meta  { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'IBM Plex Mono', monospace; }
+
+    .case-menu-btn {
+      display: none; background: none; border: none;
+      color: var(--text-2); cursor: pointer; padding: 2px 4px;
+      border-radius: 4px; font-size: 14px;
+    }
+    .case-row:hover .case-menu-btn { display: block; }
+    .case-menu-btn:hover { color: var(--text); }
+
+    .case-footer {
+      padding: 8px 10px; font-size: 11px; color: var(--text-3);
+      border-top: 1px solid var(--border); flex-shrink: 0; line-height: 1.4;
+    }
+
+    .thread-empty-state { text-align: center; color: var(--text-2); font-size: 13px; padding: 40px 16px; line-height: 1.6; }
+
+    /* ── Empty state (center) ── */
+    .empty-state {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 16px; gap: 20px; text-align: center;
+    }
+    .empty-state-title { font-size: 16px; font-weight: 600; }
+    .empty-state-sub   { font-size: 13px; color: var(--text-2); max-width: 320px; line-height: 1.5; }
+    .empty-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px; width: 100%; max-width: 500px;
+    }
+    .empty-card {
+      border: 2px dashed var(--border-2); border-radius: 10px;
+      padding: 16px 12px; cursor: pointer;
+      display: flex; flex-direction: column; gap: 6px;
+      align-items: flex-start; text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .empty-card:hover { border-color: var(--accent); background: oklch(0.78 0.11 180 / .04); }
+    .empty-card-num  { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-3); }
+    .empty-card-label{ font-size: 13px; font-weight: 500; }
+
+    .empty-sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; width: 100%; max-width: 500px; }
+    .source-card {
+      border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .source-card:hover { border-color: var(--border-2); }
+    .source-card-name  { font-size: 13px; font-weight: 500; }
+    .source-card-sub   { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+    .source-connect-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+
+    /* ── Chat (right column) ── */
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 16px 16px 8px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .msg-wrapper { display: flex; flex-direction: column; }
+
+    .message { font-size: 14px; line-height: 1.6; max-width: 100%; }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-bubble);
+      padding: 10px 14px;
+      border-radius: 14px 14px 4px 14px;
+    }
+    .msg-caption {
+      font-size: 11px; color: var(--text-3);
+      align-self: flex-end; margin-top: 3px; margin-right: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .msg-assistant-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .msg-logo { width: 18px; height: 18px; border-radius: 4px; object-fit: cover; }
+    .msg-model-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+
+    .message.assistant { align-self: flex-start; width: 100%; }
+    .message.assistant.streaming { border-left: 2px solid var(--accent); padding-left: 10px; }
+
+    /* markdown inside assistant messages */
+    .msg-section-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent); margin: 12px 0 4px;
+    }
+    .msg-section-label:first-child { margin-top: 0; }
+    .message.assistant p   { margin-bottom: 8px; }
+    .message.assistant ul, .message.assistant ol { padding-left: 18px; margin-bottom: 8px; }
+    .message.assistant li  { margin-bottom: 3px; }
+    .message.assistant strong { font-weight: 600; }
+
+    .message.system-msg { align-self: center; color: var(--text-3); font-size: 12px; font-style: italic; }
+
+    /* streaming status */
+    .stream-status { font-size: 12px; color: var(--text-2); padding: 0 16px 6px; flex-shrink: 0; }
+
+    /* suggestions */
+    .suggestions {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 6px 16px 0; flex-shrink: 0;
+    }
+    .suggestion-chip {
+      padding: 6px 12px; border-radius: 999px;
+      border: 1px solid var(--border-2); background: var(--surface-2);
+      color: var(--text-2); font-size: 12px; cursor: pointer;
+      font-family: inherit; transition: border-color 0.12s, color 0.12s;
+    }
+    .suggestion-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .suggestion-chip.primary {
+      background: var(--accent-soft); border-color: var(--accent-soft-border);
+      color: var(--accent); font-weight: 500;
+    }
+
+    /* composer */
+    .composer-wrap {
+      margin: 8px; border: 1px solid var(--border-2);
+      border-radius: 12px; background: var(--surface-2);
+      display: flex; flex-direction: column;
+      transition: border-color 0.15s; flex-shrink: 0;
+    }
+    .composer-wrap:focus-within { border-color: var(--accent); }
+
+    .context-chips {
+      display: flex; flex-wrap: wrap; gap: 5px;
+      padding: 8px 10px 0;
+    }
+    .ctx-chip {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 4px;
+      background: var(--accent-soft); border: 1px solid var(--accent-soft-border);
+      color: var(--accent); font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+    }
+    .ctx-chip-x {
+      background: none; border: none; color: var(--accent);
+      cursor: pointer; font-size: 14px; padding: 0; line-height: 1;
+    }
+    .ctx-chip.empty {
+      background: none; border: 1px dashed var(--border-2);
+      color: var(--text-3); cursor: pointer;
+    }
+    .ctx-chip.empty:hover { border-color: var(--text-2); color: var(--text-2); }
+
+    .composer-textarea {
+      flex: 1; resize: none;
+      border: none; background: none;
+      color: var(--text); padding: 10px 44px 10px 12px;
+      font-size: 14px; font-family: inherit; line-height: 1.4;
+      min-height: 44px; max-height: 140px;
+    }
+    .composer-textarea::placeholder { color: var(--text-3); }
+    .composer-textarea:focus { outline: none; }
+
+    .composer-row { display: flex; align-items: flex-end; padding: 0 8px 8px; }
+    .send-btn {
+      margin-left: auto; width: 36px; height: 36px; border-radius: 8px;
+      border: none; background: var(--accent); color: var(--on-accent);
+      cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s;
+    }
+    .send-btn:hover { opacity: 0.88; }
+    .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .disclaimer {
+      padding: 6px 14px 10px; font-size: 11px;
+      color: var(--text-3); text-align: center; flex-shrink: 0;
+    }
+
+    /* notes indicator (legacy — kept for JS refs) */
+    .notes-indicator { display: none; }
+    .notes-indicator.visible { display: flex; }
+
+    /* legacy .btn class (still used by clearBtn) */
+    .btn {
+      padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text);
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      transition: background 0.15s; font-family: inherit;
+    }
+    .btn:hover { background: var(--surface-3); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .btn.primary:hover { opacity: 0.88; }
+    .btn.stop { background: var(--red); color: #fff; border-color: var(--red); }
+    .btn.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Sources modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: oklch(0.05 0 0 / .6);
+      z-index: 100; display: none;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border-2);
+      border-radius: 14px; width: 620px; max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 64px); overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 { font-size: 16px; font-weight: 600; }
+    .modal-close { background: none; border: none; color: var(--text-2); font-size: 20px; cursor: pointer; }
+    .modal-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+    }
+    .modal-tab {
+      padding: 10px 16px; border: none; background: none;
+      color: var(--text-2); font-size: 13px; font-weight: 500;
+      border-bottom: 2px solid transparent; cursor: pointer;
+      font-family: inherit; transition: color 0.12s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .modal-tab:hover { color: var(--text); }
+    .modal-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .modal-body { padding: 20px; }
+    .modal-tab-content { display: none; }
+    .modal-tab-content.active { display: block; }
+
+    .sources-explainer { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 16px; }
+    .fhir-scope-list { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+    .fhir-scope-list li { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: var(--text-2); }
+    .connect-btn {
+      width: 100%; padding: 10px; border-radius: 8px;
+      background: var(--accent); border: none; color: var(--on-accent);
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    .connect-note { font-size: 11px; color: var(--text-3); margin-top: 8px; text-align: center; }
+
+    .pacs-form { display: flex; flex-direction: column; gap: 10px; }
+    .pacs-form label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 4px; }
+    .pacs-form input {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border-2);
+      border-radius: 6px; color: var(--text); padding: 8px 10px;
+      font-size: 13px; font-family: 'IBM Plex Mono', monospace;
+    }
+    .pacs-form input:focus { outline: none; border-color: var(--accent); }
+    .pacs-note { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
   </style>
 </head>
 
 <body>
 
+  <!-- ══ HEADER ══ -->
   <header>
-    <h1><img src="logo.png" alt="Logo" class="header-logo"><span data-i18n="appTitle">Lulo's NOT a Health Copilot</span>
-    </h1>
-    <div style="display:flex;align-items:center">
-      <button class="lang-toggle" id="langToggle">ES</button>
-      <div class="status-label">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText" data-i18n="statusChecking">Checking Ollama...</span>
+    <div class="hdr-left">
+      <img src="logo.png" alt="Logo" class="header-logo">
+      <div class="hdr-brand">
+        <span class="hdr-brand-name">Lulo</span>
+        <span class="hdr-brand-sub" data-i18n="brandSub">NOT a health copilot</span>
       </div>
+    </div>
+    <div class="hdr-mid">
+      <span class="hdr-case-title" id="hdrCaseTitle"></span>
+      <span class="hdr-kind-tag"   id="hdrKindTag"></span>
+      <span class="hdr-source-tag" id="hdrSourceTag"></span>
+    </div>
+    <div class="hdr-right">
+      <button class="pill-btn" id="sourcesBtn" data-i18n="sourcesBtn">Sources</button>
+      <button class="pill-btn" id="statusPill" style="-webkit-app-region:no-drag">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-pill-text" id="statusText" data-i18n="statusChecking">Checking…</span>
+      </button>
+      <button class="lang-toggle" id="langToggle">ES</button>
     </div>
   </header>
 
+  <!-- model popover -->
+  <div class="model-popover" id="modelPopover">
+    <label data-i18n="modelLabel">Model</label>
+    <input type="text" id="modelName" value="medgemma-vision" placeholder="model name" spellcheck="false">
+    <p class="model-popover-note" data-i18n="modelNote">Connected to Ollama at localhost:11434. Nothing leaves this computer.</p>
+  </div>
+
+  <!-- ══ MAIN 3-COLUMN ══ -->
   <div class="main-container">
-    <!-- Left Panel -->
+
+    <!-- ── Left sidebar: cases ── -->
     <div class="panel-left">
-      <div class="panel-tabs">
-        <button class="panel-tab active" data-tab="images" data-i18n="tabImages">Images</button>
-        <button class="panel-tab" data-tab="notes" data-i18n="tabNotes">Notes</button>
-        <button class="panel-tab" data-tab="threads" data-i18n="tabThreads">Threads</button>
+      <button class="case-new-btn" id="newThreadBtn" data-i18n="btnNewCase">+ New case</button>
+      <div class="case-list" id="threadList">
+        <div class="thread-empty-state" data-i18n="casesEmpty">No cases yet.<br>Upload images or notes to start.</div>
+      </div>
+      <div class="case-footer" data-i18n="caseFooter">Unpinned cases clear after 30 days. Stored only on this device.</div>
+    </div>
+
+    <!-- ── Center: viewer / notes ── -->
+    <div class="panel-center" id="panelCenter">
+
+      <!-- Empty state -->
+      <div class="empty-state" id="emptyState">
+        <p class="empty-state-title" data-i18n="emptyTitle">Start a new case</p>
+        <p class="empty-state-sub"   data-i18n="emptySub">Upload medical images, open a DICOM folder, or add clinical notes.</p>
+        <div class="empty-cards">
+          <div class="empty-card" id="emptyUploadBtn">
+            <span class="empty-card-num">01</span>
+            <span class="empty-card-label" data-i18n="emptyUpload">Upload images</span>
+          </div>
+          <div class="empty-card" id="emptyFolderBtn">
+            <span class="empty-card-num">02</span>
+            <span class="empty-card-label" data-i18n="emptyFolder">Open DICOM folder</span>
+          </div>
+          <div class="empty-card" id="emptyNotesBtn">
+            <span class="empty-card-num">03</span>
+            <span class="empty-card-label" data-i18n="emptyNotes">Add notes</span>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin-top:4px" data-i18n="emptyOr">Or import from:</p>
+        <div class="empty-sources">
+          <div class="source-card" id="epicSourceCard">
+            <div>
+              <div class="source-card-name">Epic / MyChart</div>
+              <div class="source-card-sub" data-i18n="epicSub">Health records via SMART on FHIR</div>
+            </div>
+            <span class="source-connect-link" data-i18n="connect">Connect</span>
+          </div>
+          <div class="source-card" id="pacsSourceCard">
+            <div>
+              <div class="source-card-name">PACS / DICOMweb</div>
+              <div class="source-card-sub" data-i18n="pacsSub">Search your imaging archive</div>
+            </div>
+            <span class="source-connect-link" data-i18n="connect">Connect</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Images Tab -->
-      <div class="tab-content active" id="tabImages">
-        <div class="drop-zone" id="dropZone">
-          <input type="file" id="fileInput" accept="image/*,.dcm,.DCM,application/dicom" multiple>
-          <input type="file" id="folderInput" webkitdirectory multiple style="display:none">
-          <div class="drop-placeholder">
-            <div class="drop-icon">&#128444;</div>
-            <div class="drop-text">
-              <strong data-i18n="dropTitle">Click to upload</strong> <span data-i18n="dropOrDrag">or drag &amp;
-                drop</span><br>
-              <span data-i18n="dropPaste">or paste an image (Ctrl+V / Cmd+V)</span><br><br>
-              <span data-i18n="dropTypes">X-rays, CT/MRI slices (.dcm), photos</span>
+      <!-- Case view (hidden until images/notes loaded) -->
+      <div class="tab-content" id="caseView">
+        <!-- toolbar: Scan | Notes segmented + Add files -->
+        <div class="center-toolbar">
+          <div class="seg-control">
+            <button class="seg-btn active" data-center-tab="scan" id="scanTabBtn" data-i18n="tabScan">Scan</button>
+            <button class="seg-btn" data-center-tab="notes" id="notesTabBtn" data-i18n="tabNotesSeg">Notes</button>
+          </div>
+          <button class="add-files-btn" id="addFilesBtn" data-i18n="addFiles">+ Add files</button>
+        </div>
+
+        <!-- Scan tab -->
+        <div class="tab-content active" id="tabScan" style="flex-direction:column;min-height:0">
+          <!-- viewer -->
+          <div class="viewer-wrap" id="viewerWrap">
+            <div class="drop-zone" id="dropZone">
+              <input type="file" id="fileInput" accept="image/*,.dcm,.DCM,application/dicom" multiple>
+              <input type="file" id="folderInput" webkitdirectory multiple style="display:none">
+              <div class="drop-placeholder">
+                <div class="drop-icon">+</div>
+                <div class="drop-text">
+                  <strong data-i18n="dropTitle">Click to upload</strong> <span data-i18n="dropOrDrag">or drag &amp; drop</span><br>
+                  <span data-i18n="dropPaste">or paste (Ctrl+V / Cmd+V)</span><br>
+                  <span data-i18n="dropTypes">X-rays, CT/MRI slices (.dcm), photos</span>
+                </div>
+              </div>
+              <img class="preview-img" id="previewImg" alt="Preview">
+            </div>
+            <!-- corner overlays -->
+            <div class="viewer-overlay tl" id="viewerTL"></div>
+            <div class="viewer-overlay tr" id="viewerTR"></div>
+            <!-- include pill -->
+            <button class="include-pill" id="includePill" style="display:none" data-i18n="includePill">+ Include this slice</button>
+          </div>
+
+          <div class="dicom-info" id="dicomInfo">
+            <span class="dicom-badge">DICOM</span>
+            <span id="dicomInfoText"></span>
+          </div>
+          <div class="loading-bar" id="loadingBar">
+            <div class="loading-bar-inner"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
+          </div>
+
+          <!-- scrubber + slice controls -->
+          <div class="slice-controls" id="sliceControls">
+            <div class="slice-count-row">
+              <span id="sliceCountLabel"></span>
+              <button class="btn" id="autoSelectBtn" style="padding:3px 8px;font-size:11px;flex:none" data-i18n="autoPickBtn">Auto-pick 6</button>
+              <button class="btn" id="clearBtn"      style="padding:3px 8px;font-size:11px;flex:none" data-i18n="btnClear">Clear</button>
+              <button style="display:none" id="selectAllBtn"></button><!-- kept for legacy JS -->
+            </div>
+            <input type="range" class="slice-scrubber" id="sliceScrubber" min="0" value="0">
+            <p class="slice-hint" data-i18n="sliceHint">&#8592; &#8594; to scroll slices &middot; S to include</p>
+          </div>
+
+          <!-- thumbnail strip -->
+          <div class="slice-gallery-container" id="sliceGalleryContainer">
+            <div class="slice-gallery" id="sliceGallery"></div>
+          </div>
+        </div>
+
+        <!-- Notes tab (center) -->
+        <div class="tab-content" id="tabNotes" style="flex-direction:column;min-height:0">
+          <div class="notes-drop-zone" id="notesDropZone">
+            <input type="file" id="notesFileInput" accept=".txt,.pdf,.text">
+            <div class="notes-file-label" id="notesFileLabel">
+              <strong data-i18n="notesDropTitle">Upload</strong> <span data-i18n="notesDropSubtitle">clinical notes (.txt, .pdf)</span> &mdash; <span data-i18n="notesDropPaste">or paste below</span>
             </div>
           </div>
-          <img class="preview-img" id="previewImg" alt="Preview">
-        </div>
-
-        <div class="dicom-info" id="dicomInfo">
-          <span class="dicom-badge">DICOM</span>
-          <span id="dicomInfoText"></span>
-        </div>
-
-        <div class="loading-bar" id="loadingBar">
-          <div class="loading-bar-inner">
-            <div class="loading-bar-fill" id="loadingBarFill"></div>
+          <div class="notes-textarea-wrap">
+            <div class="notes-textarea-label" data-i18n="notesLabel">Clinical Notes / After-Visit Summary</div>
+            <textarea class="notes-textarea" id="notesTextarea"
+              placeholder="Paste clinical notes, after-visit summaries, lab results…"
+              data-i18n-placeholder="notesPlaceholder"></textarea>
           </div>
-        </div>
-
-        <div class="slice-gallery-container" id="sliceGalleryContainer">
-          <div class="slice-gallery-header">
-            <span id="sliceCountLabel">0 slices</span>
-            <div class="slice-gallery-actions">
-              <button id="autoSelectBtn" title="Select ~6 evenly-spaced slices">Auto-Select</button>
-              <button id="selectAllBtn">Select All</button>
-              <button id="uploadFolderBtn" title="Upload a DICOM folder">+ Folder</button>
-            </div>
+          <div class="notes-footer">
+            <span class="notes-char-count" id="notesCharCount">0 chars</span>
+            <button class="notes-include-pill" id="notesIncludePill" data-i18n="notesInclude">+ Include in chat</button>
           </div>
-          <div class="slice-gallery" id="sliceGallery"></div>
-        </div>
-
-        <div class="image-actions">
-          <button class="btn" id="clearBtn" disabled data-i18n="btnClear">Clear</button>
-          <button class="btn primary" id="analyzeBtn" disabled data-i18n="btnAnalyze">Analyze</button>
-        </div>
-      </div>
-
-      <!-- Notes Tab -->
-      <div class="tab-content" id="tabNotes">
-        <div class="notes-drop-zone" id="notesDropZone">
-          <input type="file" id="notesFileInput" accept=".txt,.pdf,.text">
-          <div class="drop-icon">&#128196;</div>
-          <div class="drop-text">
-            <strong data-i18n="notesDropTitle">Upload</strong> <span data-i18n="notesDropSubtitle">clinical notes (.txt,
-              .pdf)</span><br><span data-i18n="notesDropPaste">or paste below</span>
-          </div>
-        </div>
-        <div class="notes-textarea-wrap">
-          <div class="notes-textarea-label" data-i18n="notesLabel">Clinical Notes / After-Visit Summary</div>
-          <textarea class="notes-textarea" id="notesTextarea"
-            placeholder="Paste clinical notes, after-visit summaries, lab results, or any relevant text here..."
-            data-i18n-placeholder="notesPlaceholder"></textarea>
-        </div>
-        <div class="notes-footer">
-          <span class="notes-char-count" id="notesCharCount">0 chars</span>
-          <div class="notes-actions">
-            <button class="btn" id="clearNotesBtn" style="flex:none;padding:8px 14px"
-              data-i18n="btnClear">Clear</button>
-            <button class="btn primary" id="loadNotesBtn" style="flex:none;padding:8px 14px"
-              data-i18n="btnLoadNotes">Load into Chat</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Threads Tab -->
-      <div class="tab-content" id="tabThreads">
-        <button class="thread-new-btn" id="newThreadBtn" data-i18n="btnNewThread">+ New Thread</button>
-        <div class="thread-list" id="threadList">
-          <div class="thread-empty-state" data-i18n="threadsEmpty">No saved threads yet.<br>Threads are created
-            automatically when you analyze images or ask questions.</div>
         </div>
       </div>
     </div>
 
-    <!-- Right Panel: Chat -->
+    <!-- ── Right: chat ── -->
     <div class="panel-right">
-      <div class="chat-header">
-        <label data-i18n="modelLabel">Model:</label>
-        <input type="text" id="modelName" value="medgemma-vision" placeholder="model name">
-        <div class="notes-indicator" id="notesIndicator">
-          <span id="notesIndicatorText" data-i18n="notesLoaded">Notes loaded</span>
-          <button id="clearNotesIndicatorBtn" title="Clear notes">&times;</button>
+      <!-- hidden elements kept for JS compat -->
+      <div class="notes-indicator" id="notesIndicator">
+        <span id="notesIndicatorText"></span>
+        <button id="clearNotesIndicatorBtn">&times;</button>
+      </div>
+      <!-- hidden analyze button kept for MutationObserver -->
+      <button id="analyzeBtn" style="display:none"></button>
+      <!-- hidden loadNotesBtn kept for JS compat -->
+      <button id="loadNotesBtn" style="display:none"></button>
+      <!-- hidden clearNotesBtn kept for JS compat -->
+      <button id="clearNotesBtn" style="display:none"></button>
+      <!-- hidden uploadFolderBtn -->
+      <button id="uploadFolderBtn" style="display:none"></button>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="message system-msg" id="chatEmpty" data-i18n="chatEmpty">Ready when you are.</div>
+      </div>
+      <div class="stream-status" id="streamStatus" style="display:none"></div>
+
+      <!-- suggestion chips -->
+      <div class="suggestions" id="suggestions">
+        <button class="suggestion-chip primary" id="analyzeChip" data-i18n="chipAnalyze">Analyze slices</button>
+        <button class="suggestion-chip" id="explainChip"  data-i18n="chipExplain">Explain in plain language</button>
+        <button class="suggestion-chip" id="doctorChip"   data-i18n="chipDoctor">What should I ask my doctor?</button>
+      </div>
+
+      <!-- composer -->
+      <div class="composer-wrap">
+        <div class="context-chips" id="contextChips"></div>
+        <textarea class="composer-textarea" id="chatInput" rows="1"
+          placeholder="Ask a follow-up…" data-i18n-placeholder="chatPlaceholder"></textarea>
+        <div class="composer-row">
+          <button id="sendBtn" class="send-btn" title="Send">&#9654;</button>
         </div>
       </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="message system-msg" data-i18n="chatWelcome">Upload a medical image and click Analyze, or load
-          clinical notes to ask questions.</div>
+      <div class="disclaimer" data-i18n="disclaimer">Don't take medical advice from a monkey. For research and educational use only.</div>
+    </div>
+  </div>
+
+  <!-- ══ SOURCES MODAL ══ -->
+  <div class="modal-overlay" id="sourcesModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 data-i18n="sourcesTitle">Sources</h2>
+        <button class="modal-close" id="sourcesClose">&times;</button>
       </div>
-      <div class="chat-input-area">
-        <textarea id="chatInput" rows="1" placeholder="Ask a follow-up question or request a treatment plan..." data-i18n-placeholder="chatPlaceholder"></textarea>
-        <button id="sendBtn" class="send-btn" title="Send">&#9654;</button>
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-modal-tab="epic">
+          <div class="status-dot" id="epicDot"></div> Epic / MyChart
+        </button>
+        <button class="modal-tab" data-modal-tab="pacs">
+          <div class="status-dot" id="pacsDot"></div> PACS / DICOMweb
+        </button>
       </div>
-      <div class="disclaimer" data-i18n="disclaimer">
-        Don't take medical advice from a monkey. For research and educational use only.
+      <div class="modal-body">
+        <!-- Epic tab -->
+        <div class="modal-tab-content active" id="epicTab">
+          <p class="sources-explainer" data-i18n="epicExplainer">Connect your MyChart / Epic account to import health records (imaging reports, lab results, visit notes) as context. This uses SMART on FHIR — read-only access, token stored only on this device.</p>
+          <ul class="fhir-scope-list">
+            <li>patient/DocumentReference.read</li>
+            <li>patient/DiagnosticReport.read</li>
+            <li>patient/Observation.read</li>
+            <li>patient/ImagingStudy.read</li>
+          </ul>
+          <button class="connect-btn" id="epicConnectBtn" data-i18n="epicConnect">Sign in with MyChart</button>
+          <p class="connect-note" data-i18n="epicNote">SMART on FHIR &middot; token stays on this device &middot; read-only</p>
+        </div>
+        <!-- PACS tab -->
+        <div class="modal-tab-content" id="pacsTab">
+          <div class="pacs-form">
+            <div>
+              <label data-i18n="pacsUrl">Server URL</label>
+              <input type="url" id="pacsUrl" placeholder="https://pacs.example.com/dicomweb" spellcheck="false">
+              <p class="pacs-note">QIDO-RS to search &middot; WADO-RS to download</p>
+            </div>
+            <div>
+              <label data-i18n="pacsAuth">Auth</label>
+              <div class="seg-control" style="width:100%">
+                <button class="seg-btn active" style="flex:1" data-pacs-auth="none">None</button>
+                <button class="seg-btn" style="flex:1" data-pacs-auth="basic">Basic</button>
+                <button class="seg-btn" style="flex:1" data-pacs-auth="bearer">Bearer token</button>
+              </div>
+            </div>
+            <button class="connect-btn" id="pacsConnectBtn" data-i18n="pacsConnect">Test &amp; connect</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1043,90 +1010,150 @@
     // ── Localization ──
     const translations = {
       en: {
-        appTitle: "Lulo's NOT a Health Copilot",
-        statusChecking: "Checking Ollama...",
-        statusConnected: "Ollama connected",
+        brandSub: "NOT a health copilot",
+        statusChecking: "Checking…",
+        statusConnected: "Running locally",
         statusNotReachable: "Ollama not reachable",
-        tabImages: "Images",
-        tabNotes: "Notes",
-        tabThreads: "Threads",
+        sourcesBtn: "Sources",
+        sourcesTitle: "Sources",
+        modelLabel: "Model",
+        modelNote: "Connected to Ollama at localhost:11434. Nothing leaves this computer.",
+        btnNewCase: "+ New case",
+        casesEmpty: "No cases yet.\nUpload images or notes to start.",
+        caseFooter: "Unpinned cases clear after 30 days. Stored only on this device.",
+        emptyTitle: "Start a new case",
+        emptySub: "Upload medical images, open a DICOM folder, or add clinical notes.",
+        emptyUpload: "Upload images",
+        emptyFolder: "Open DICOM folder",
+        emptyNotes: "Add notes",
+        emptyOr: "Or import from:",
+        epicSub: "Health records via SMART on FHIR",
+        pacsSub: "Search your imaging archive",
+        connect: "Connect →",
+        tabScan: "Scan",
+        tabNotesSeg: "Notes",
+        addFiles: "+ Add files",
         dropTitle: "Click to upload",
         dropOrDrag: "or drag & drop",
-        dropPaste: "or paste an image (Ctrl+V / Cmd+V)",
+        dropPaste: "or paste (Ctrl+V / Cmd+V)",
         dropTypes: "X-rays, CT/MRI slices (.dcm), photos",
-        dicomBadge: "DICOM",
-        sliceCount: "{count} slices loaded",
-        sliceCountSelected: "{selected} of {total} slices selected",
-        sliceSelectAuto: "Auto-Select",
-        sliceSelectAll: "Select All",
-        sliceUploadFolder: "+ Folder",
+        includePill: "+ Include this slice",
+        includePillOn: "✓ Included",
+        autoPickBtn: "Auto-pick 6",
         btnClear: "Clear",
-        btnAnalyze: "Analyze",
+        sliceHint: "← → to scroll slices · S to include",
+        sliceCountSelected: "{selected} of {total} slices sent",
         notesDropTitle: "Upload",
         notesDropSubtitle: "clinical notes (.txt, .pdf)",
         notesDropPaste: "or paste below",
         notesLabel: "Clinical Notes / After-Visit Summary",
-        notesPlaceholder: "Paste clinical notes, after-visit summaries, lab results, or any relevant text here...",
-        btnLoadNotes: "Load into Chat",
-        btnNewThread: "+ New Thread",
-        threadsEmpty: "No saved threads yet.<br>Threads are created automatically when you analyze images or ask questions.",
-        modelLabel: "Model:",
-        notesLoaded: "Notes loaded",
-        chatWelcome: "Upload a medical image and click Analyze, or load clinical notes to ask questions.",
-        chatPlaceholder: "Ask a follow-up, request a treatment plan, or ask about the image...",
-        disclaimer: "Don't take medical advice from a monkey. For research and educational use only.",
-        systemStorageFull: "Storage full. Delete some old threads to free space.",
-        systemNotesLoaded: "Clinical notes loaded ({count} chars). Notes will be included as context in your next message.",
+        notesPlaceholder: "Paste clinical notes, after-visit summaries, lab results…",
+        notesInclude: "+ Include in chat",
+        notesIncludeOn: "✓ Included in chat",
+        chatEmpty: "Ready when you are — select slices or add notes, then send.",
+        chatPlaceholder: "Ask a follow-up…",
+        chipAnalyze: "Analyze {n} slices",
+        chipExplain: "Explain in plain language",
+        chipDoctor: "What should I ask my doctor?",
+        disclaimer: "Don’t take medical advice from a monkey. For research and educational use only.",
+        streamStatus: "Reading {n} slices and notes…",
+        epicExplainer: "Connect your MyChart / Epic account to import health records as context. Read-only, SMART on FHIR, token stored on this device only.",
+        epicConnect: "Sign in with MyChart",
+        epicNote: "SMART on FHIR · token stays on this device · read-only",
+        pacsUrl: "Server URL",
+        pacsAuth: "Auth",
+        pacsConnect: "Test & connect",
+        systemStorageFull: "Storage full. Delete some old cases to free space.",
+        systemNotesLoaded: "Notes included as context ({count} chars).",
         timeJustNow: "Just now",
         timeAgoM: "{m}m ago",
         timeAgoH: "{h}h ago",
         timeAgoD: "{d}d ago",
-        promptAnalyzeMulti: "Analyze these {count} medical image slices. {dicom}Describe what you observe across the slices, identify any notable findings, and provide a differential assessment.",
-        promptAnalyzeSingle: "Analyze this medical image. Describe what you observe, identify any notable findings, and provide a differential assessment.",
-        dicomContext: "The images use 3-channel CT windowing (R=bone/lung, G=soft tissue, B=brain). "
+        promptAnalyzeMulti: "## What I see\n\nAnalyze these {count} medical image slices. {dicom}Describe what you observe across the slices.\n\n## Compared with your notes\n\nNote any relevant correlation with the clinical context.\n\n## Possibilities\n\nProvide a differential assessment.\n\n## Ask your clinician\n\nSuggest 2–3 questions for a healthcare provider.",
+        promptAnalyzeSingle: "## What I see\n\nAnalyze this medical image. Describe what you observe.\n\n## Possibilities\n\nProvide a differential assessment.\n\n## Ask your clinician\n\nSuggest 2–3 questions for a healthcare provider.",
+        dicomContext: "The images use 3-channel CT windowing (R=bone/lung, G=soft tissue, B=brain). ",
+        // legacy keys kept for internal use
+        btnAnalyze: "Analyze",
+        btnLoadNotes: "Load",
+        btnNewThread: "+ New case",
+        notesLoaded: "Notes loaded",
+        chatWelcome: "Ready when you are.",
+        sliceCount: "{count} slices loaded",
+        sliceSelectAuto: "Auto-pick 6",
+        sliceSelectAll: "Select All",
+        sliceUploadFolder: "+ Folder",
+        tabImages: "Scan", tabNotes: "Notes", tabThreads: "Cases",
+        dicomBadge: "DICOM",
+        threadsEmpty: "No cases yet."
       },
       es: {
-        appTitle: "NO es un Copiloto de Salud",
-        statusChecking: "Verificando Ollama...",
-        statusConnected: "Ollama conectado",
+        brandSub: "NO es copiloto de salud",
+        statusChecking: "Verificando…",
+        statusConnected: "Ejecutando localmente",
         statusNotReachable: "Ollama no disponible",
-        tabImages: "Imágenes",
-        tabNotes: "Notas",
-        tabThreads: "Hilos",
+        sourcesBtn: "Fuentes",
+        sourcesTitle: "Fuentes",
+        modelLabel: "Modelo",
+        modelNote: "Conectado a Ollama en localhost:11434. Nada sale de este equipo.",
+        btnNewCase: "+ Nuevo caso",
+        casesEmpty: "Sin casos aún.\nSube imágenes o notas para comenzar.",
+        caseFooter: "Los casos no fijados se eliminan a los 30 días. Solo en este dispositivo.",
+        emptyTitle: "Inicia un nuevo caso",
+        emptySub: "Sube imágenes médicas, abre una carpeta DICOM o añade notas clínicas.",
+        emptyUpload: "Subir imágenes",
+        emptyFolder: "Abrir carpeta DICOM",
+        emptyNotes: "Añadir notas",
+        emptyOr: "O importar desde:",
+        epicSub: "Historial clínico via SMART on FHIR",
+        pacsSub: "Buscar en tu archivo de imágenes",
+        connect: "Conectar →",
+        tabScan: "Scan",
+        tabNotesSeg: "Notas",
+        addFiles: "+ Añadir archivos",
         dropTitle: "Clic para subir",
-        dropOrDrag: "o arrastrar y soltar",
-        dropPaste: "o pegar imagen (Ctrl+V / Cmd+V)",
+        dropOrDrag: "o arrastrar",
+        dropPaste: "o pegar (Ctrl+V / Cmd+V)",
         dropTypes: "Rayos-X, cortes CT/MRI (.dcm), fotos",
-        dicomBadge: "DICOM",
-        sliceCount: "{count} cortes cargados",
-        sliceCountSelected: "{selected} de {total} cortes seleccionados",
-        sliceSelectAuto: "Auto-Selec.",
-        sliceSelectAll: "Selec. Todos",
-        sliceUploadFolder: "+ Carpeta",
+        includePill: "+ Incluir este corte",
+        includePillOn: "✓ Incluido",
+        autoPickBtn: "Auto-elegir 6",
         btnClear: "Borrar",
-        btnAnalyze: "Analizar",
+        sliceHint: "← → para navegar · S para incluir",
+        sliceCountSelected: "{selected} de {total} cortes enviados",
         notesDropTitle: "Subir",
         notesDropSubtitle: "notas clínicas (.txt, .pdf)",
         notesDropPaste: "o pegar abajo",
         notesLabel: "Notas Clínicas / Resumen de Visita",
-        notesPlaceholder: "Pegue notas clínicas, resúmenes, resultados de laboratorio o texto relevante aquí...",
-        btnLoadNotes: "Cargar al Chat",
-        btnNewThread: "+ Nuevo Hilo",
-        threadsEmpty: "No hay hilos guardados.<br>Se crean automáticamente al analizar imágenes o preguntar.",
-        modelLabel: "Modelo:",
-        notesLoaded: "Notas cargadas",
-        chatWelcome: "Sube una imagen médica y haz clic en Analizar, o carga notas para preguntar.",
-        chatPlaceholder: "Haz una pregunta, solicita un plan de tratamiento, o pregunta sobre la imagen...",
+        notesPlaceholder: "Pega notas clínicas, resúmenes, resultados de laboratorio…",
+        notesInclude: "+ Incluir en chat",
+        notesIncludeOn: "✓ Incluido en chat",
+        chatEmpty: "Listo cuando quieras.",
+        chatPlaceholder: "Haz una pregunta de seguimiento…",
+        chipAnalyze: "Analizar {n} cortes",
+        chipExplain: "Explicar en lenguaje sencillo",
+        chipDoctor: "¿Qué preguntarle a mi médico?",
         disclaimer: "No aceptes consejos médicos de un mono. Solo para investigación y educación.",
-        systemStorageFull: "Almacenamiento lleno. Borra hilos antiguos.",
-        systemNotesLoaded: "Notas cargadas ({count} caracteres). Se incluirán como contexto.",
+        streamStatus: "Leyendo {n} cortes y notas…",
+        epicExplainer: "Conecta tu cuenta de MyChart / Epic para importar registros de salud como contexto. Solo lectura, SMART on FHIR, token solo en este dispositivo.",
+        epicConnect: "Iniciar sesión con MyChart",
+        epicNote: "SMART on FHIR · token solo en este dispositivo · solo lectura",
+        pacsUrl: "URL del servidor",
+        pacsAuth: "Auth",
+        pacsConnect: "Probar y conectar",
+        systemStorageFull: "Almacenamiento lleno. Borra casos antiguos.",
+        systemNotesLoaded: "Notas incluidas como contexto ({count} caracteres).",
         timeJustNow: "Ahora",
         timeAgoM: "hace {m}m",
         timeAgoH: "hace {h}h",
         timeAgoD: "hace {d}d",
-        promptAnalyzeMulti: "Analiza estos {count} cortes de imagen médica. {dicom}Describe lo que observas, identifica hallazgos notables y proporciona una evaluación diferencial.",
-        promptAnalyzeSingle: "Analiza esta imagen médica. Describe lo que observas, identifica hallazgos notables y proporciona una evaluación diferencial.",
-        dicomContext: "Las imágenes usan ventana CT de 3 canales (R=hueso/pulmón, G=tejido blando, B=cerebro). "
+        promptAnalyzeMulti: "## Lo que veo\n\nAnaliza estos {count} cortes de imagen médica. {dicom}Describe lo que observas.\n\n## Comparado con tus notas\n\nNota cualquier correlación relevante con el contexto clínico.\n\n## Posibilidades\n\nProporciona una evaluación diferencial.\n\n## Pregunta a tu médico\n\nSugiere 2–3 preguntas para un profesional de salud.",
+        promptAnalyzeSingle: "## Lo que veo\n\nAnaliza esta imagen médica. Describe lo que observas.\n\n## Posibilidades\n\nProporciona una evaluación diferencial.\n\n## Pregunta a tu médico\n\nSugiere 2–3 preguntas para un profesional de salud.",
+        dicomContext: "Las imágenes usan ventana CT de 3 canales (R=hueso/pulmón, G=tejido blando, B=cerebro). ",
+        btnAnalyze: "Analizar", btnLoadNotes: "Cargar", btnNewThread: "+ Nuevo caso",
+        notesLoaded: "Notas cargadas", chatWelcome: "Listo.",
+        sliceCount: "{count} cortes", sliceSelectAuto: "Auto-elegir", sliceSelectAll: "Todo",
+        sliceUploadFolder: "+ Carpeta", tabImages: "Scan", tabNotes: "Notas", tabThreads: "Casos",
+        dicomBadge: "DICOM", threadsEmpty: "Sin casos."
       }
     };
 
@@ -1145,13 +1172,10 @@
       localStorage.setItem('medgemma_lang', lang);
       document.getElementById('langToggle').textContent = lang === 'en' ? 'ES' : 'EN';
 
-      // Update static elements
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translations[lang][key]) {
-          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            // Handle placeholders if needed, currently mostly handled by data-i18n-placeholder
-          } else {
+        if (translations[lang][key] !== undefined) {
+          if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
             el.innerHTML = translations[lang][key];
           }
         }
@@ -1162,10 +1186,12 @@
         if (translations[lang][key]) el.placeholder = translations[lang][key];
       });
 
-      // Update dynamic logic triggers
       updateSliceCountLabel();
-      checkOllama(); // Update status text
-      renderThreadList(); // Update thread dates
+      updateIncludePill();
+      updateNotesIncludePill();
+      updateSuggestions();
+      checkOllama();
+      renderThreadList();
     }
 
     document.getElementById('langToggle').addEventListener('click', () => {
@@ -1181,7 +1207,6 @@
       window.electronAPI.onStatus((message) => {
         console.log('Electron status:', message);
         statusText.textContent = message;
-        // Also show important messages in chat
         if (message.includes('Downloading') || message.includes('Pulling') || message.includes('Error')) {
           addMessage('system-msg', message);
         }
@@ -1194,7 +1219,7 @@
     const folderInput = document.getElementById('folderInput');
     const previewImg = document.getElementById('previewImg');
     const clearBtn = document.getElementById('clearBtn');
-    const analyzeBtn = document.getElementById('analyzeBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');  // hidden, kept for MutationObserver
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -1222,6 +1247,305 @@
     const notesIndicator = document.getElementById('notesIndicator');
     const notesIndicatorText = document.getElementById('notesIndicatorText');
     const clearNotesIndicatorBtn = document.getElementById('clearNotesIndicatorBtn');
+
+    // ── New UI refs ──
+    const emptyState     = document.getElementById('emptyState');
+    const caseView       = document.getElementById('caseView');
+    const sliceControls  = document.getElementById('sliceControls');
+    const sliceScrubber  = document.getElementById('sliceScrubber');
+    const includePill    = document.getElementById('includePill');
+    const notesIncludePill = document.getElementById('notesIncludePill');
+    const contextChips   = document.getElementById('contextChips');
+    const suggestions    = document.getElementById('suggestions');
+    const analyzeChip    = document.getElementById('analyzeChip');
+    const streamStatus   = document.getElementById('streamStatus');
+    const viewerTL       = document.getElementById('viewerTL');
+    const viewerTR       = document.getElementById('viewerTR');
+    const hdrCaseTitle   = document.getElementById('hdrCaseTitle');
+    const hdrKindTag     = document.getElementById('hdrKindTag');
+
+    // ── New state ──
+    let slicesIncluded = true;
+    let notesIncluded  = false;
+    let connections    = { epic: { connected: false }, pacs: { url: '', connected: false } };
+    let sheet          = null;  // null | 'epic' | 'pacs'
+    let firstReplyDone = false;
+
+    // ── Empty state / case view toggle ──
+    function showCaseView() {
+      emptyState.style.display = 'none';
+      caseView.classList.add('active');
+    }
+    function showEmptyState() {
+      emptyState.style.display = '';
+      caseView.classList.remove('active');
+    }
+
+    // ── Center tab switching (Scan / Notes) ──
+    document.querySelectorAll('[data-center-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-center-tab]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.centerTab;
+        document.getElementById('tabScan').classList.toggle('active', tab === 'scan');
+        document.getElementById('tabNotes').classList.toggle('active', tab === 'notes');
+      });
+    });
+
+    // empty-state card shortcuts
+    document.getElementById('emptyUploadBtn').addEventListener('click', () => fileInput.click());
+    document.getElementById('emptyFolderBtn').addEventListener('click', () => folderInput.click());
+    document.getElementById('emptyNotesBtn').addEventListener('click', () => {
+      showCaseView();
+      document.querySelector('[data-center-tab="notes"]').click();
+    });
+    document.getElementById('epicSourceCard').addEventListener('click', () => openSourcesModal('epic'));
+    document.getElementById('pacsSourceCard').addEventListener('click', () => openSourcesModal('pacs'));
+    document.getElementById('addFilesBtn').addEventListener('click', () => fileInput.click());
+
+    // ── Status pill → model popover ──
+    const modelPopover = document.getElementById('modelPopover');
+    document.getElementById('statusPill').addEventListener('click', (e) => {
+      e.stopPropagation();
+      modelPopover.classList.toggle('open');
+    });
+    document.addEventListener('click', () => modelPopover.classList.remove('open'));
+    modelPopover.addEventListener('click', e => e.stopPropagation());
+
+    // ── Slice scrubber ──
+    sliceScrubber.addEventListener('input', () => {
+      const i = parseInt(sliceScrubber.value);
+      currentPreviewIndex = i;
+      previewImg.src = loadedSlices[i].dataUrl;
+      updateGalleryHighlights();
+      updateViewerOverlays();
+    });
+
+    // ── Keyboard nav for viewer ──
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement === chatInput || document.activeElement === notesTextarea) return;
+      if (loadedSlices.length < 2) return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const delta = e.key === 'ArrowRight' ? 1 : -1;
+        currentPreviewIndex = Math.max(0, Math.min(loadedSlices.length - 1, currentPreviewIndex + delta));
+        previewImg.src = loadedSlices[currentPreviewIndex].dataUrl;
+        sliceScrubber.value = currentPreviewIndex;
+        updateGalleryHighlights();
+        updateViewerOverlays();
+      }
+      if (e.key === 's' || e.key === 'S') {
+        if (currentPreviewIndex >= 0) toggleSliceSelection(currentPreviewIndex);
+      }
+    });
+
+    // ── Include pill (viewer) ──
+    includePill.addEventListener('click', () => {
+      if (currentPreviewIndex >= 0) toggleSliceSelection(currentPreviewIndex);
+    });
+
+    function updateIncludePill() {
+      if (loadedSlices.length === 0 || currentPreviewIndex < 0) { includePill.style.display = 'none'; return; }
+      includePill.style.display = '';
+      const on = selectedSliceIndices.includes(currentPreviewIndex);
+      includePill.textContent = on ? t('includePillOn') : t('includePill');
+      includePill.classList.toggle('included', on);
+    }
+
+    // ── Notes include pill ──
+    notesIncludePill.addEventListener('click', () => {
+      const text = notesTextarea.value.trim();
+      if (!text) return;
+      notesIncluded = !notesIncluded;
+      if (notesIncluded) {
+        clinicalNotesText = text;
+        clinicalNotesSource = clinicalNotesSource || 'pasted';
+      }
+      updateNotesIncludePill();
+      updateContextChips();
+    });
+
+    function updateNotesIncludePill() {
+      notesIncludePill.textContent = notesIncluded ? t('notesIncludeOn') : t('notesInclude');
+      notesIncludePill.classList.toggle('included', notesIncluded);
+    }
+
+    // ── Viewer overlays ──
+    function updateViewerOverlays() {
+      if (loadedSlices.length === 0) { viewerTL.textContent = ''; viewerTR.textContent = ''; return; }
+      if (isDicomMode) {
+        const sl = loadedSlices[currentPreviewIndex];
+        viewerTL.textContent = 'DICOM\n' + (sl.fileName || '');
+        viewerTR.textContent = `SLICE ${currentPreviewIndex + 1} / ${loadedSlices.length}`;
+      } else {
+        viewerTL.textContent = loadedSlices[currentPreviewIndex]?.fileName || '';
+        viewerTR.textContent = loadedSlices.length > 1 ? `${currentPreviewIndex + 1} / ${loadedSlices.length}` : '';
+      }
+    }
+
+    // ── Header case info ──
+    function updateHeaderCase() {
+      if (loadedSlices.length === 0 && !clinicalNotesText) {
+        hdrCaseTitle.textContent = '';
+        hdrKindTag.textContent = '';
+        return;
+      }
+      const name = loadedSlices.length > 0 ? loadedSlices[0].fileName : 'Notes';
+      hdrCaseTitle.textContent = name.length > 40 ? name.slice(0, 37) + '…' : name;
+      if (isDicomMode && loadedSlices.length > 1) {
+        hdrKindTag.textContent = `DICOM · ${loadedSlices.length} slices`;
+      } else if (isDicomMode) {
+        hdrKindTag.textContent = 'DICOM';
+      } else if (loadedSlices.length > 0) {
+        hdrKindTag.textContent = loadedSlices.length > 1 ? `${loadedSlices.length} images` : 'Image';
+      } else {
+        hdrKindTag.textContent = 'Notes';
+      }
+    }
+
+    // ── Context chips ──
+    function updateContextChips() {
+      contextChips.innerHTML = '';
+      if (loadedSlices.length > 0) {
+        if (slicesIncluded) {
+          const c = document.createElement('div');
+          c.className = 'ctx-chip';
+          c.innerHTML = `${selectedSliceIndices.length} slices <button class="ctx-chip-x" title="Exclude slices">&times;</button>`;
+          c.querySelector('.ctx-chip-x').addEventListener('click', () => { slicesIncluded = false; updateContextChips(); });
+          contextChips.appendChild(c);
+        } else {
+          const c = document.createElement('div');
+          c.className = 'ctx-chip empty';
+          c.textContent = '+ Slices';
+          c.addEventListener('click', () => { slicesIncluded = true; updateContextChips(); });
+          contextChips.appendChild(c);
+        }
+      }
+      if (clinicalNotesText) {
+        if (notesIncluded) {
+          const kb = (clinicalNotesText.length / 1000).toFixed(1);
+          const c = document.createElement('div');
+          c.className = 'ctx-chip';
+          c.innerHTML = `Notes · ${kb}k <button class="ctx-chip-x" title="Exclude notes">&times;</button>`;
+          c.querySelector('.ctx-chip-x').addEventListener('click', () => { notesIncluded = false; updateContextChips(); });
+          contextChips.appendChild(c);
+        } else {
+          const c = document.createElement('div');
+          c.className = 'ctx-chip empty';
+          c.textContent = '+ Notes';
+          c.addEventListener('click', () => { notesIncluded = true; notesInjected = false; updateContextChips(); });
+          contextChips.appendChild(c);
+        }
+      }
+    }
+
+    // ── Suggestion chips ──
+    function updateSuggestions() {
+      if (firstReplyDone) { suggestions.style.display = 'none'; return; }
+      suggestions.style.display = '';
+      const n = slicesIncluded ? selectedSliceIndices.length : 0;
+      analyzeChip.textContent = t('chipAnalyze').replace('{n}', n || '');
+      analyzeChip.style.display = n > 0 ? '' : 'none';
+    }
+
+    analyzeChip.addEventListener('click', () => sendAnalyze());
+    document.getElementById('explainChip').addEventListener('click', () => {
+      chatInput.value = 'Explain these findings in plain language suitable for a patient.';
+      handleChatSend();
+    });
+    document.getElementById('doctorChip').addEventListener('click', () => {
+      chatInput.value = 'What questions should I ask my doctor about these findings?';
+      handleChatSend();
+    });
+
+    function sendAnalyze() {
+      if (selectedSliceIndices.length === 0) return;
+      const dicomCtx = isDicomMode ? t('dicomContext') : '';
+      const prompt = loadedSlices.length > 1
+        ? t('promptAnalyzeMulti', { count: selectedSliceIndices.length, dicom: dicomCtx })
+        : t('promptAnalyzeSingle');
+      const images = slicesIncluded ? selectedSliceIndices.map(i => loadedSlices[i].base64) : null;
+      sendToOllama(prompt, images);
+    }
+
+    // ── Tiny markdown renderer ──
+    function renderMarkdown(text) {
+      const div = document.createElement('div');
+      const lines = text.split('\n');
+      let inList = false;
+      let listEl = null;
+      function flushList() { if (inList) { div.appendChild(listEl); inList = false; listEl = null; } }
+      for (const raw of lines) {
+        const line = raw.trimEnd();
+        if (line.startsWith('## ')) {
+          flushList();
+          const lbl = document.createElement('div');
+          lbl.className = 'msg-section-label';
+          lbl.textContent = line.slice(3);
+          div.appendChild(lbl);
+        } else if (/^[-*] /.test(line)) {
+          if (!inList) { listEl = document.createElement('ul'); inList = true; }
+          const li = document.createElement('li');
+          li.innerHTML = inlineMarkdown(line.slice(2));
+          listEl.appendChild(li);
+        } else if (/^\d+\. /.test(line)) {
+          if (!inList || listEl.tagName !== 'OL') { flushList(); listEl = document.createElement('ol'); inList = true; }
+          const li = document.createElement('li');
+          li.innerHTML = inlineMarkdown(line.replace(/^\d+\. /, ''));
+          listEl.appendChild(li);
+        } else if (line === '') {
+          flushList();
+        } else {
+          flushList();
+          const p = document.createElement('p');
+          p.innerHTML = inlineMarkdown(line);
+          div.appendChild(p);
+        }
+      }
+      flushList();
+      return div;
+    }
+
+    function inlineMarkdown(text) {
+      return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    }
+
+    // ── Sources modal ──
+    function openSourcesModal(tab) {
+      sheet = tab;
+      document.getElementById('sourcesModal').classList.add('open');
+      document.querySelectorAll('.modal-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.modalTab === tab);
+      });
+      document.getElementById('epicTab').classList.toggle('active', tab === 'epic');
+      document.getElementById('pacsTab').classList.toggle('active', tab === 'pacs');
+    }
+    document.getElementById('sourcesBtn').addEventListener('click', () => openSourcesModal('epic'));
+    document.getElementById('sourcesClose').addEventListener('click', () => {
+      document.getElementById('sourcesModal').classList.remove('open');
+    });
+    document.getElementById('sourcesModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('sourcesModal')) document.getElementById('sourcesModal').classList.remove('open');
+    });
+    document.querySelectorAll('.modal-tab').forEach(tab => {
+      tab.addEventListener('click', () => openSourcesModal(tab.dataset.modalTab));
+    });
+    document.getElementById('epicConnectBtn').addEventListener('click', () => {
+      addMessage('system-msg', 'Epic / SMART on FHIR integration coming soon. Requires app registration at open.epic.com.');
+    });
+    document.getElementById('pacsConnectBtn').addEventListener('click', () => {
+      addMessage('system-msg', 'PACS DICOMweb integration coming soon. Requires a QIDO-RS/WADO-RS compatible server.');
+    });
+    // PACS auth segmented
+    document.querySelectorAll('[data-pacs-auth]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pacs-auth]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
 
     // ── State ──
     let loadedSlices = [];         // [{base64, fileName, instanceNumber, dataUrl}]
@@ -1484,9 +1808,20 @@
       currentThreadId = threadId;
       thread.lastModifiedAt = Date.now();
       saveThreadsToStorage();
+      firstReplyDone = conversationHistory.some(m => m.role === 'assistant');
 
-      // Switch to Images tab
-      document.querySelector('[data-tab="images"]').click();
+      showCaseView();
+      document.querySelector('[data-center-tab="scan"]').click();
+      if (loadedSlices.length > 1) {
+        sliceControls.classList.add('visible');
+        sliceScrubber.max = loadedSlices.length - 1;
+        sliceScrubber.value = 0;
+      }
+      updateViewerOverlays();
+      updateIncludePill();
+      updateContextChips();
+      updateSuggestions();
+      updateHeaderCase();
     }
 
     async function deleteThread(threadId) {
@@ -1501,7 +1836,9 @@
         currentThreadId = null;
         clearAllImages();
         conversationHistory = [];
-        chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
+        firstReplyDone = false;
+        chatMessages.innerHTML = `<div class="message system-msg" id="chatEmpty">${t('chatEmpty')}</div>`;
+        showEmptyState();
       }
       renderThreadList();
     }
@@ -1544,75 +1881,85 @@
       container.innerHTML = '';
 
       if (threads.length === 0) {
-        container.innerHTML = `<div class="thread-empty-state">${t('threadsEmpty')}</div>`;
+        container.innerHTML = `<div class="thread-empty-state">${t('casesEmpty').replace('\n', '<br>')}</div>`;
         return;
       }
 
-      threads.forEach(thread => {
-        const card = document.createElement('div');
-        card.className = 'thread-card' + (thread.id === currentThreadId ? ' active' : '');
+      const now = Date.now();
+      const weekMs = 7 * 24 * 3600 * 1000;
+      const pinned  = threads.filter(th => th.saved);
+      const thisWeek = threads.filter(th => !th.saved && (now - th.lastModifiedAt) < weekMs);
+      const earlier  = threads.filter(th => !th.saved && (now - th.lastModifiedAt) >= weekMs);
 
-        const msgCount = thread.conversationHistory.filter(m => m.role === 'assistant').length;
-        const imgCount = (thread.images || []).length;
-        const notesLen = (thread.clinicalNotesText || '').length;
+      function renderGroup(label, items) {
+        if (!items.length) return;
+        const lbl = document.createElement('div');
+        lbl.className = 'case-group-label';
+        lbl.textContent = label;
+        container.appendChild(lbl);
+        items.forEach(thread => {
+          const imgCount = (thread.images || []).length;
+          const notesLen = (thread.clinicalNotesText || '').length;
+          const msgCount = thread.conversationHistory.filter(m => m.role === 'assistant').length;
+          const metaParts = [];
+          if (imgCount > 0) metaParts.push(`${imgCount} slice${imgCount > 1 ? 's' : ''}`);
+          if (notesLen > 0) metaParts.push('notes');
+          if (msgCount > 0) metaParts.push(`${msgCount} msg`);
+          metaParts.push(formatThreadDate(thread.lastModifiedAt));
 
-        let thumbsHtml = '';
-        if (imgCount > 0) {
-          const thumbs = thread.images.slice(0, 3).map(img =>
-            img.thumbnailDataUrl ? `<img src="${img.thumbnailDataUrl}" class="thread-thumb" alt="">` : ''
-          ).join('');
-          const more = imgCount > 3 ? `<span class="thread-thumb-more">+${imgCount - 3}</span>` : '';
-          thumbsHtml = `<div class="thread-thumbnails">${thumbs}${more}</div>`;
-        }
+          const row = document.createElement('div');
+          row.className = 'case-row' + (thread.id === currentThreadId ? ' active' : '');
 
-        card.innerHTML = `
-      <div class="thread-card-header">
-        <input class="thread-title" value="${escapeHtml(thread.title)}" spellcheck="false">
-        <button class="thread-save-btn ${thread.saved ? 'saved' : ''}" title="${thread.saved ? 'Unsave' : 'Save (keep beyond 30 days)'}">
-          ${thread.saved ? '&#9733;' : '&#9734;'}
-        </button>
-      </div>
-      <div class="thread-meta">
-        <span>${formatThreadDate(thread.lastModifiedAt)}</span>
-        ${imgCount > 0 ? `<span>&#128247; ${imgCount}</span>` : ''}
-        ${notesLen > 0 ? `<span>&#128221; ${(notesLen / 1000).toFixed(1)}K</span>` : ''}
-        ${msgCount > 0 ? `<span>&#128172; ${msgCount}</span>` : ''}
-      </div>
-      ${thumbsHtml}
-      <div class="thread-actions">
-        <button class="thread-load-btn">Load</button>
-        <button class="thread-delete-btn" title="Delete">&#128465;</button>
-      </div>
-    `;
+          const firstThumb = thread.images?.[0]?.thumbnailDataUrl;
+          let thumbHtml;
+          if (firstThumb) {
+            thumbHtml = `<img class="case-thumb" src="${firstThumb}" alt="">`;
+          } else {
+            const badge = thread.isDicomMode ? 'CT' : (notesLen > 0 ? 'TXT' : 'IMG');
+            thumbHtml = `<div class="case-thumb-badge">${badge}</div>`;
+          }
 
-        card.querySelector('.thread-load-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          loadThread(thread.id);
+          row.innerHTML = `
+            ${thumbHtml}
+            <div class="case-info">
+              <div class="case-title">${escapeHtml(thread.title)}</div>
+              <div class="case-meta">${metaParts.join(' · ')}</div>
+            </div>
+            <button class="case-menu-btn" title="Options">&#8943;</button>
+          `;
+
+          row.addEventListener('click', () => loadThread(thread.id));
+          row.querySelector('.case-menu-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const actions = [
+              { label: thread.saved ? 'Unpin' : 'Pin', action: () => toggleThreadSaved(thread.id) },
+              { label: 'Delete', action: () => { if (confirm(`Delete "${thread.title}"?`)) deleteThread(thread.id); } }
+            ];
+            // simple inline confirm for now; full context menu can be a follow-up
+            const choice = window.prompt(`"${thread.title}"\n\n1 = ${actions[0].label}\n2 = ${actions[1].label}`);
+            if (choice === '1') actions[0].action();
+            else if (choice === '2') actions[1].action();
+          });
+
+          container.appendChild(row);
         });
+      }
 
-        card.querySelector('.thread-save-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleThreadSaved(thread.id);
-        });
-
-        card.querySelector('.thread-delete-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm(`Delete "${thread.title}"?`)) deleteThread(thread.id);
-        });
-
-        const titleInput = card.querySelector('.thread-title');
-        titleInput.addEventListener('change', () => renameThread(thread.id, titleInput.value));
-        titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleInput.blur(); } });
-
-        container.appendChild(card);
-      });
+      if (pinned.length)   renderGroup('Pinned', pinned);
+      if (thisWeek.length) renderGroup('This week', thisWeek);
+      if (earlier.length)  renderGroup('Earlier', earlier);
     }
 
     // ── Status check ──
     async function checkOllama() {
       try {
         const res = await fetch(OLLAMA_BASE + '/api/tags');
-        if (res.ok) { statusDot.classList.add('connected'); statusText.textContent = t('statusConnected'); return true; }
+        if (res.ok) {
+          statusDot.classList.add('connected');
+          const model = modelNameInput.value.trim() || 'medgemma-vision';
+          statusText.textContent = `${t('statusConnected')} · ${model}`;
+          return true;
+        }
       } catch (e) { }
       statusDot.classList.remove('connected');
       statusText.textContent = t('statusNotReachable');
@@ -1620,18 +1967,7 @@
     }
     checkOllama();
     setInterval(checkOllama, 10000);
-
-    // ── Tab switching ──
-    const tabMap = { images: 'tabImages', notes: 'tabNotes', threads: 'tabThreads' };
-    document.querySelectorAll('.panel-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tabMap[tab.dataset.tab]).classList.add('active');
-        if (tab.dataset.tab === 'threads') renderThreadList();
-      });
-    });
+    modelNameInput.addEventListener('change', checkOllama);
 
     // ════════════════════════════════════════
     //  IMAGE / DICOM HANDLING
@@ -1642,6 +1978,7 @@
       selectedSliceIndices = [];
       currentPreviewIndex = -1;
       isDicomMode = false;
+      slicesIncluded = true;
       previewImg.src = '';
       dropZone.classList.remove('has-image');
       clearBtn.disabled = true;
@@ -1650,9 +1987,15 @@
       folderInput.value = '';
       sliceGallery.innerHTML = '';
       sliceGalleryContainer.classList.remove('visible');
+      sliceControls.classList.remove('visible');
       dicomInfo.classList.remove('visible');
       loadingBar.classList.remove('visible');
       updateSliceCountLabel();
+      updateIncludePill();
+      updateViewerOverlays();
+      updateContextChips();
+      updateSuggestions();
+      updateHeaderCase();
     }
 
     function loadSingleImage(file) {
@@ -1669,7 +2012,16 @@
         clearBtn.disabled = false;
         analyzeBtn.disabled = false;
         sliceGalleryContainer.classList.remove('visible');
+        sliceControls.classList.remove('visible');
         dicomInfo.classList.remove('visible');
+        showCaseView();
+        document.querySelector('[data-center-tab="scan"]').click();
+        includePill.style.display = '';
+        updateViewerOverlays();
+        updateIncludePill();
+        updateContextChips();
+        updateSuggestions();
+        updateHeaderCase();
       };
       reader.readAsDataURL(file);
     }
@@ -1899,19 +2251,29 @@
     }
 
     function finishMultiSliceLoad() {
-      // Show first slice in preview
       currentPreviewIndex = 0;
       previewImg.src = loadedSlices[0].dataUrl;
       dropZone.classList.add('has-image');
       clearBtn.disabled = false;
+      showCaseView();
+      document.querySelector('[data-center-tab="scan"]').click();
 
-      // Auto-select representative slices
       autoSelectSlices();
-
-      // Build gallery
       buildSliceGallery();
       sliceGalleryContainer.classList.add('visible');
+
+      // scrubber
+      sliceControls.classList.add('visible');
+      sliceScrubber.max = loadedSlices.length - 1;
+      sliceScrubber.value = 0;
+
       analyzeBtn.disabled = false;
+      includePill.style.display = '';
+      updateViewerOverlays();
+      updateIncludePill();
+      updateContextChips();
+      updateSuggestions();
+      updateHeaderCase();
     }
 
     function readFileAsDataURL(file) {
@@ -2016,6 +2378,9 @@
         img.classList.toggle('viewing', i === currentPreviewIndex);
         img.classList.toggle('selected', selectedSliceIndices.includes(i));
       });
+      updateIncludePill();
+      updateContextChips();
+      updateSuggestions();
     }
 
     function updateSliceCountLabel() {
@@ -2026,7 +2391,7 @@
       sliceCountLabel.textContent = t('sliceCountSelected', { selected: selectedSliceIndices.length, total: loadedSlices.length });
     }
 
-    autoSelectBtn.addEventListener('click', () => { autoSelectSlices(); buildSliceGallery(); });
+    autoSelectBtn.addEventListener('click', () => { autoSelectSlices(); buildSliceGallery(); updateContextChips(); updateSuggestions(); });
     selectAllBtn.addEventListener('click', () => {
       selectedSliceIndices = loadedSlices.map((_, i) => i);
       updateGalleryHighlights();
@@ -2141,31 +2506,35 @@
     }
 
     loadNotesBtn.addEventListener('click', () => {
+      // Legacy: auto-include notes when notes textarea has content
       const text = notesTextarea.value.trim();
       if (!text) return;
       clinicalNotesText = text;
       notesInjected = false;
+      notesIncluded = true;
       if (!clinicalNotesSource) clinicalNotesSource = 'pasted';
-      showNotesIndicator();
-      addMessage('system-msg', t('systemNotesLoaded', { count: text.length.toLocaleString() }));
+      updateNotesIncludePill();
+      updateContextChips();
     });
 
     function showNotesIndicator() {
-      notesIndicator.classList.add('visible');
-      const label = clinicalNotesSource.startsWith('file:')
-        ? clinicalNotesSource.replace('file: ', '')
-        : 'Pasted notes';
-      notesIndicatorText.textContent = `${label} (${clinicalNotesText.length.toLocaleString()} chars)`;
+      // Legacy call-sites kept — the notes include pill is the new UI
+      notesIncluded = true;
+      updateNotesIncludePill();
+      updateContextChips();
     }
 
     function clearNotes() {
       clinicalNotesText = '';
       clinicalNotesSource = '';
       notesInjected = false;
+      notesIncluded = false;
       notesTextarea.value = '';
       notesFileInput.value = '';
       notesIndicator.classList.remove('visible');
       updateNotesCharCount();
+      updateNotesIncludePill();
+      updateContextChips();
     }
 
     clearNotesBtn.addEventListener('click', clearNotes);
@@ -2177,20 +2546,57 @@
 
     let abortController = null;
 
-    function addMessage(role, text) {
+    function addMessage(role, text, attachmentLabel) {
+      const chatEmpty = document.getElementById('chatEmpty');
+      if (chatEmpty) chatEmpty.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'msg-wrapper';
+
       const div = document.createElement('div');
       div.className = `message ${role}`;
-      div.textContent = text;
-      chatMessages.appendChild(div);
+
+      if (role === 'user') {
+        div.textContent = text;
+        wrapper.appendChild(div);
+        if (attachmentLabel) {
+          const cap = document.createElement('div');
+          cap.className = 'msg-caption';
+          cap.textContent = attachmentLabel;
+          wrapper.appendChild(cap);
+        }
+      } else if (role === 'assistant') {
+        const hdr = document.createElement('div');
+        hdr.className = 'msg-assistant-header';
+        hdr.innerHTML = `<img class="msg-logo" src="logo.png" alt=""><span class="msg-model-label">MedGemma</span>`;
+        wrapper.appendChild(hdr);
+        div.appendChild(renderMarkdown(text));
+        wrapper.appendChild(div);
+      } else {
+        div.textContent = text;
+        wrapper.appendChild(div);
+      }
+
+      chatMessages.appendChild(wrapper);
       chatMessages.scrollTop = chatMessages.scrollHeight;
       return div;
     }
 
     function createStreamingMessage() {
+      const chatEmpty = document.getElementById('chatEmpty');
+      if (chatEmpty) chatEmpty.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'msg-wrapper';
+      const hdr = document.createElement('div');
+      hdr.className = 'msg-assistant-header';
+      hdr.innerHTML = `<img class="msg-logo" src="logo.png" alt=""><span class="msg-model-label">MedGemma</span>`;
+      wrapper.appendChild(hdr);
       const div = document.createElement('div');
       div.className = 'message assistant streaming';
       div.textContent = '';
-      chatMessages.appendChild(div);
+      wrapper.appendChild(div);
+      chatMessages.appendChild(wrapper);
       chatMessages.scrollTop = chatMessages.scrollHeight;
       return div;
     }
@@ -2206,15 +2612,19 @@
     async function sendToOllama(userText, imageBase64Array) {
       if (isStreaming) return;
       isStreaming = true;
+      firstReplyDone = true;
 
-      // Update Analyze button to Stop button
-      analyzeBtn.textContent = 'Stop';
+      // signal state via hidden analyzeBtn class (MutationObserver watches it)
       analyzeBtn.classList.add('stop');
-      analyzeBtn.disabled = false; // Enable so it can be clicked to stop
 
-      // Show loading bar (indeterminate)
-      loadingBar.classList.add('visible');
-      loadingBar.classList.add('indeterminate');
+      // stream status
+      const n = imageBase64Array ? imageBase64Array.length : 0;
+      streamStatus.textContent = t('streamStatus').replace('{n}', n);
+      streamStatus.style.display = n > 0 ? '' : 'none';
+
+      loadingBar.classList.add('visible', 'indeterminate');
+      sendBtn.textContent = '■'; // stop square
+      suggestions.style.display = 'none';
 
       abortController = new AbortController();
 
@@ -2222,13 +2632,14 @@
       const promptText = buildPromptWithContext(userText);
 
       const userMsg = { role: 'user', content: promptText };
-      if (imageBase64Array && imageBase64Array.length > 0) {
-        userMsg.images = imageBase64Array;
-      }
+      if (imageBase64Array && imageBase64Array.length > 0) userMsg.images = imageBase64Array;
       conversationHistory.push(userMsg);
 
-      // Show the original text to user (not the full context-injected version)
-      addMessage('user', userText);
+      // build attachment label for user bubble caption
+      const parts = [];
+      if (n > 0) parts.push(`${n} slice${n !== 1 ? 's' : ''}`);
+      if (notesIncluded && clinicalNotesText) parts.push('notes');
+      addMessage('user', userText, parts.length ? parts.join(' · ') : null);
 
       const streamDiv = createStreamingMessage();
       let fullResponse = '';
@@ -2259,7 +2670,9 @@
               const json = JSON.parse(line);
               if (json.message?.content) {
                 fullResponse += json.message.content;
-                streamDiv.textContent = fullResponse;
+                // live update: replace inner content with rendered markdown
+                streamDiv.innerHTML = '';
+                streamDiv.appendChild(renderMarkdown(fullResponse));
                 chatMessages.scrollTop = chatMessages.scrollHeight;
               }
             } catch (parseErr) { }
@@ -2273,67 +2686,34 @@
       } catch (err) {
         streamDiv.classList.remove('streaming');
         if (err.name === 'AbortError') {
-          streamDiv.textContent += ' [Stopped]';
-          conversationHistory.push({ role: 'assistant', content: fullResponse }); // Save partial
+          conversationHistory.push({ role: 'assistant', content: fullResponse });
         } else {
           streamDiv.textContent = 'Error: ' + err.message;
           streamDiv.style.color = 'var(--red)';
         }
       } finally {
         isStreaming = false;
-
-        // Revert Analyze button
-        analyzeBtn.textContent = t('btnAnalyze');
         analyzeBtn.classList.remove('stop');
-
-        loadingBar.classList.remove('visible');
-        loadingBar.classList.remove('indeterminate');
+        loadingBar.classList.remove('visible', 'indeterminate');
+        streamStatus.style.display = 'none';
+        sendBtn.textContent = '▶';
         abortController = null;
-
-        if (loadedSlices.length > 0 && selectedSliceIndices.length > 0) analyzeBtn.disabled = false;
+        // hide suggestions after first reply
+        updateSuggestions();
       }
     }
 
-    // Analyze button
-    analyzeBtn.addEventListener('click', () => {
-      // If streaming, this button acts as Stop
+    // ── Chat input: Send / Stop ──
+    function handleChatSend() {
       if (isStreaming) {
-        if (abortController) {
-          abortController.abort();
-          abortController = null;
-        }
+        if (abortController) { abortController.abort(); abortController = null; }
         return;
       }
-
-      if (selectedSliceIndices.length === 0) return;
-      const customPrompt = chatInput.value.trim();
-
-      let prompt;
-      if (customPrompt) {
-        prompt = customPrompt;
-      } else if (loadedSlices.length > 1) {
-        const dicomContext = isDicomMode ? t('dicomContext') : '';
-        prompt = t('promptAnalyzeMulti', { count: selectedSliceIndices.length, dicom: dicomContext });
-      } else {
-        prompt = t('promptAnalyzeSingle');
-      }
-
-      chatInput.value = '';
-      chatInput.style.height = 'auto';
-      const images = selectedSliceIndices.map(i => loadedSlices[i].base64);
-      sendToOllama(prompt, images);
-    });
-
-    // ── Chat input: Send button + Enter key ──
-    function handleChatSend() {
       const text = chatInput.value.trim();
-      if (!text || isStreaming) return;
-
-      // If images are loaded, include them with the message
-      const images = selectedSliceIndices.length > 0
+      if (!text) return;
+      const images = (slicesIncluded && selectedSliceIndices.length > 0)
         ? selectedSliceIndices.map(i => loadedSlices[i].base64)
         : null;
-
       chatInput.value = '';
       chatInput.style.height = 'auto';
       sendToOllama(text, images);
@@ -2354,14 +2734,7 @@
       chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
     });
 
-    // Disable send button while streaming
-    const origSetStreaming = () => {
-      sendBtn.disabled = isStreaming;
-    };
-    // Watch isStreaming changes via the analyze button state
-    new MutationObserver(() => {
-      sendBtn.disabled = analyzeBtn.classList.contains('stop');
-    }).observe(analyzeBtn, { attributes: true, attributeFilter: ['class'] });
+    // sendBtn appearance updates happen inside sendToOllama / handleChatSend directly
 
 
     // PDF.js worker config
@@ -2380,23 +2753,30 @@
       currentThreadId = null;
       clearAllImages();
       conversationHistory = [];
-      chatMessages.innerHTML = '<div class="message system-msg">Upload a medical image and click Analyze, or load clinical notes to ask questions.</div>';
+      firstReplyDone = false;
+      chatMessages.innerHTML = `<div class="message system-msg" id="chatEmpty" data-i18n="chatEmpty">${t('chatEmpty')}</div>`;
       clinicalNotesText = '';
       clinicalNotesSource = '';
       notesInjected = false;
+      notesIncluded = false;
       notesTextarea.value = '';
       updateNotesCharCount();
+      updateNotesIncludePill();
       notesIndicator.classList.remove('visible');
       renderThreadList();
-      document.querySelector('[data-tab="images"]').click();
+      showEmptyState();
+      updateContextChips();
+      updateSuggestions();
     });
 
-    // Init threads on load
+    // Init on load
     (async () => {
       await initImageDB();
       loadThreadsFromStorage();
-      setLanguage(currentLang); // Init language
+      setLanguage(currentLang);
       renderThreadList();
+      showEmptyState();
+      updateSuggestions();
     })();
   </script>
 
